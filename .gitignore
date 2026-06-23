@@ -1,2 +1,7 @@
-/.venv
+__pycache__/
+*.pyc
 .env
+instance/
+smartrent.db
+static/uploads/*
+!.gitkeep
