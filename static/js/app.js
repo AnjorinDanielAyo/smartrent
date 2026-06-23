@@ -12,14 +12,30 @@ const state = {
 // ══════════════════════════════════
 // API HELPER
 // ══════════════════════════════════
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 async function api(path, method, body) {
   method = method || 'GET';
   const opts = {
     method,
-    headers: { 'Content-Type': 'application/json' },
     credentials: 'same-origin',
   };
-  if (body) opts.body = JSON.stringify(body);
+  if (body) {
+    if (body instanceof FormData) {
+      opts.body = body;
+    } else {
+      opts.headers = { 'Content-Type': 'application/json' };
+      opts.body = JSON.stringify(body);
+    }
+  }
   const res  = await fetch(path, opts);
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Something went wrong.');
@@ -94,6 +110,9 @@ async function handleLogin() {
   const email = document.getElementById('login-email').value.trim();
   const pass  = document.getElementById('login-password').value;
   const errEl = document.getElementById('login-error');
+  const btn = document.querySelector('#form-login button.btn-primary');
+  const originalText = btn ? btn.innerHTML : 'Sign in';
+  if (btn) { btn.disabled = true; btn.innerHTML = 'Processing...'; }
   try {
     const data = await api('/api/login', 'POST', { email, password: pass });
     errEl.style.display = 'none';
@@ -101,6 +120,8 @@ async function handleLogin() {
   } catch (e) {
     document.getElementById('login-error-text').textContent = e.message;
     errEl.style.display = 'flex';
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = originalText; }
   }
 }
 
@@ -112,6 +133,9 @@ async function handleRegister() {
   const isDual = document.getElementById('dual-role-check').checked;
   const roles  = isDual ? 'both' : selectedRole;
   const errEl  = document.getElementById('reg-error');
+  const btn = document.querySelector('#form-register button.btn-primary');
+  const originalText = btn ? btn.innerHTML : 'Create account';
+  if (btn) { btn.disabled = true; btn.innerHTML = 'Processing...'; }
   try {
     const data = await api('/api/register', 'POST', { fname, lname, email, password: pass, roles });
     errEl.style.display = 'none';
@@ -119,6 +143,8 @@ async function handleRegister() {
   } catch (e) {
     document.getElementById('reg-error-text').textContent = e.message;
     errEl.style.display = 'flex';
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = originalText; }
   }
 }
 
@@ -188,7 +214,7 @@ async function renderBrowse() {
         ? '<span class="availability-badge badge-available"><i class="lucide-circle" style="font-size:8px"></i> Available</span>'
         : '<span class="availability-badge badge-rented"><i class="lucide-circle" style="font-size:8px"></i> Rented</span>';
       const imgHtml = item.img_url
-        ? '<img src="' + item.img_url + '" alt="' + item.title + '" loading="lazy" onerror="this.parentElement.innerHTML=\'<div class=\\\'no-img\\\'><i class=\\\'lucide-image-off\\\'></i></div>\'" />'
+        ? '<img src="' + escapeHtml(item.img_url) + '" alt="' + escapeHtml(item.title) + '" loading="lazy" onerror="this.parentElement.innerHTML=\'<div class=\\\'no-img\\\'><i class=\\\'lucide-image-off\\\'></i></div>\'" />'
         : '<div class="no-img"><i class="lucide-image-off"></i></div>';
       const actionBtn = item.status === 'available'
         ? '<button class="btn btn-primary btn-sm w-full" style="margin-top:12px" onclick="openRentModal(' + item.id + ')"><i class="lucide-calendar-plus" style="font-size:14px"></i> Request rental</button>'
@@ -197,16 +223,16 @@ async function renderBrowse() {
         '<div class="item-card">',
           '<div class="item-card-img">' + imgHtml + '</div>',
           '<div class="item-card-body">',
-            '<div class="item-cat-tag"><i class="lucide-tag" style="font-size:11px"></i>' + item.category + '</div>',
-            '<div class="item-card-title">' + item.title + '</div>',
-            '<div class="item-card-desc">' + item.description + '</div>',
+            '<div class="item-cat-tag"><i class="lucide-tag" style="font-size:11px"></i>' + escapeHtml(item.category) + '</div>',
+            '<div class="item-card-title">' + escapeHtml(item.title) + '</div>',
+            '<div class="item-card-desc">' + escapeHtml(item.description) + '</div>',
             '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">',
               '<div class="item-price">₦' + Number(item.price).toLocaleString() + '<span>/day</span></div>',
               avBadge,
             '</div>',
             '<div class="item-meta">',
-              '<span><i class="lucide-map-pin"></i> ' + item.location + '</span>',
-              '<span><i class="lucide-user"></i> ' + (item.owner_name || '') + '</span>',
+              '<span><i class="lucide-map-pin"></i> ' + escapeHtml(item.location) + '</span>',
+              '<span><i class="lucide-user"></i> ' + escapeHtml(item.owner_name || '') + '</span>',
             '</div>',
             actionBtn,
           '</div>',
@@ -240,7 +266,7 @@ async function renderMyRentals() {
       const days = Math.max(1, Math.ceil((new Date(r.end_date) - new Date(r.start_date)) / 86400000));
       const cost = r.item_price * days;
       const badge = r.status === 'approved' ? 'badge-success' : 'badge-warning';
-      return '<tr><td><strong>' + r.item_title + '</strong></td><td style="color:var(--text2);font-size:13px">' + r.start_date + ' — ' + r.end_date + '</td><td><span class="badge ' + badge + '">' + r.status + '</span></td><td style="font-weight:600;color:var(--orange)">₦' + cost.toLocaleString() + '</td></tr>';
+      return '<tr><td><strong>' + escapeHtml(r.item_title) + '</strong></td><td style="color:var(--text2);font-size:13px">' + escapeHtml(r.start_date) + ' — ' + escapeHtml(r.end_date) + '</td><td><span class="badge ' + badge + '">' + escapeHtml(r.status) + '</span></td><td style="font-weight:600;color:var(--orange)">₦' + cost.toLocaleString() + '</td></tr>';
     }).join('');
     el.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Item</th><th>Dates</th><th>Status</th><th>Est. Cost</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
   } catch(e) { el.innerHTML = '<div class="empty-state"><i class="lucide-alert-circle"></i><h3>Error</h3><p>' + e.message + '</p></div>'; }
@@ -257,7 +283,7 @@ async function renderHistory() {
       return;
     }
     const badgeMap = { completed:'badge-success', cancelled:'badge-neutral', declined:'badge-danger' };
-    const rows = hist.map(r => '<tr><td><strong>' + r.item_title + '</strong></td><td style="color:var(--text2);font-size:13px">' + r.start_date + ' — ' + r.end_date + '</td><td><span class="badge ' + (badgeMap[r.status]||'badge-neutral') + '">' + r.status + '</span></td></tr>').join('');
+    const rows = hist.map(r => '<tr><td><strong>' + escapeHtml(r.item_title) + '</strong></td><td style="color:var(--text2);font-size:13px">' + escapeHtml(r.start_date) + ' — ' + escapeHtml(r.end_date) + '</td><td><span class="badge ' + (badgeMap[r.status]||'badge-neutral') + '">' + escapeHtml(r.status) + '</span></td></tr>').join('');
     el.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Item</th><th>Dates</th><th>Status</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
   } catch(e) { el.innerHTML = '<div class="empty-state"><i class="lucide-alert-circle"></i><h3>Error</h3><p>' + e.message + '</p></div>'; }
 }
@@ -299,7 +325,7 @@ async function renderOwnerOverview() {
     if (listings.length === 0) {
       overviewEl.innerHTML = '<div class="empty-state"><i class="lucide-package-plus"></i><h3>No listings yet</h3><p>Add your first item to start earning rental income.</p><button class="btn btn-primary btn-sm" onclick="showPanel(\'rentee\',\'add-listing\')"><i class="lucide-plus" style="font-size:14px"></i> Add your first listing</button></div>';
     } else {
-      const rows = listings.slice(0,5).map(l => '<tr><td><strong>' + l.title + '</strong></td><td style="color:var(--text2);font-size:13px">' + l.category + '</td><td style="color:var(--orange);font-weight:600">₦' + Number(l.price).toLocaleString() + '</td><td><span class="badge ' + (l.status==='available'?'badge-success':'badge-warning') + '">' + l.status + '</span></td></tr>').join('');
+      const rows = listings.slice(0,5).map(l => '<tr><td><strong>' + escapeHtml(l.title) + '</strong></td><td style="color:var(--text2);font-size:13px">' + escapeHtml(l.category) + '</td><td style="color:var(--orange);font-weight:600">₦' + Number(l.price).toLocaleString() + '</td><td><span class="badge ' + (l.status==='available'?'badge-success':'badge-warning') + '">' + escapeHtml(l.status) + '</span></td></tr>').join('');
       overviewEl.innerHTML = '<div class="table-wrap"><div class="table-header"><h3>Recent listings</h3><a style="font-size:13px;color:var(--orange);cursor:pointer" onclick="showPanel(\'rentee\',\'my-listings\')">View all</a></div><table><thead><tr><th>Item</th><th>Category</th><th>Rate/day</th><th>Status</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
     }
   } catch(e) { showToast(e.message, 'error'); }
@@ -318,9 +344,9 @@ async function renderMyListings() {
     el.innerHTML = '<div class="cards-grid">' + listings.map(function(item) {
       const badge   = item.status === 'available' ? 'badge-success' : 'badge-warning';
       const imgHtml = item.img_url
-        ? '<img src="' + item.img_url + '" alt="' + item.title + '" loading="lazy" onerror="this.parentElement.innerHTML=\'<div class=\\\'no-img\\\'><i class=\\\'lucide-image-off\\\'></i></div>\'" />'
+        ? '<img src="' + escapeHtml(item.img_url) + '" alt="' + escapeHtml(item.title) + '" loading="lazy" onerror="this.parentElement.innerHTML=\'<div class=\\\'no-img\\\'><i class=\\\'lucide-image-off\\\'></i></div>\'" />'
         : '<div class="no-img"><i class="lucide-image-off"></i></div>';
-      return '<div class="item-card"><div class="item-card-img">' + imgHtml + '</div><div class="item-card-body"><div class="item-cat-tag"><i class="lucide-tag" style="font-size:11px"></i>' + item.category + '</div><div class="item-card-title">' + item.title + '</div><div style="display:flex;align-items:center;justify-content:space-between;margin:8px 0"><div class="item-price">₦' + Number(item.price).toLocaleString() + '<span>/day</span></div><span class="badge ' + badge + '">' + item.status + '</span></div><div class="item-meta"><span><i class="lucide-map-pin"></i> ' + item.location + '</span></div><div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-ghost btn-sm" style="flex:1;justify-content:center" onclick="toggleItemStatus(' + item.id + ')"><i class="lucide-refresh-cw" style="font-size:13px"></i> Toggle</button><button class="btn btn-danger btn-sm" onclick="deleteListing(' + item.id + ')"><i class="lucide-trash-2" style="font-size:13px"></i></button></div></div></div>';
+      return '<div class="item-card"><div class="item-card-img">' + imgHtml + '</div><div class="item-card-body"><div class="item-cat-tag"><i class="lucide-tag" style="font-size:11px"></i>' + escapeHtml(item.category) + '</div><div class="item-card-title">' + escapeHtml(item.title) + '</div><div style="display:flex;align-items:center;justify-content:space-between;margin:8px 0"><div class="item-price">₦' + Number(item.price).toLocaleString() + '<span>/day</span></div><span class="badge ' + badge + '">' + escapeHtml(item.status) + '</span></div><div class="item-meta"><span><i class="lucide-map-pin"></i> ' + escapeHtml(item.location) + '</span></div><div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-ghost btn-sm" style="flex:1;justify-content:center" onclick="toggleItemStatus(' + item.id + ')"><i class="lucide-refresh-cw" style="font-size:13px"></i> Toggle</button><button class="btn btn-danger btn-sm" onclick="deleteListing(' + item.id + ')"><i class="lucide-trash-2" style="font-size:13px"></i></button></div></div></div>';
     }).join('') + '</div>';
   } catch(e) { el.innerHTML = '<div class="empty-state"><i class="lucide-alert-circle"></i><h3>Error loading listings</h3><p>' + e.message + '</p></div>'; }
 }
@@ -339,7 +365,7 @@ async function renderRequests() {
       const actions = r.status === 'pending'
         ? '<div style="display:flex;gap:6px"><button class="btn btn-sm" style="background:rgba(34,197,94,.1);color:var(--success);border:1px solid rgba(34,197,94,.2);padding:4px 12px" onclick="handleRequest(' + r.id + ',\'approved\')"><i class="lucide-check" style="font-size:12px"></i> Approve</button><button class="btn btn-danger btn-sm" style="padding:4px 12px" onclick="handleRequest(' + r.id + ',\'declined\')"><i class="lucide-x" style="font-size:12px"></i> Decline</button></div>'
         : '<span style="font-size:12px;color:var(--text3)">—</span>';
-      return '<tr><td><strong>' + r.item_title + '</strong></td><td style="color:var(--text2)">' + r.renter_name + '</td><td style="font-size:13px;color:var(--text2)">' + r.start_date + ' — ' + r.end_date + '</td><td><span class="badge ' + (badgeMap[r.status]||'badge-neutral') + '">' + r.status + '</span></td><td>' + actions + '</td></tr>';
+      return '<tr><td><strong>' + escapeHtml(r.item_title) + '</strong></td><td style="color:var(--text2)">' + escapeHtml(r.renter_name) + '</td><td style="font-size:13px;color:var(--text2)">' + escapeHtml(r.start_date) + ' — ' + escapeHtml(r.end_date) + '</td><td><span class="badge ' + (badgeMap[r.status]||'badge-neutral') + '">' + escapeHtml(r.status) + '</span></td><td>' + actions + '</td></tr>';
     }).join('');
     el.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Item</th><th>Renter</th><th>Dates</th><th>Status</th><th>Actions</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
   } catch(e) { el.innerHTML = '<div class="empty-state"><i class="lucide-alert-circle"></i><h3>Error</h3><p>' + e.message + '</p></div>'; }
@@ -351,17 +377,21 @@ function renderProfile(dash) {
   const roleBadges = (u.roles === 'both' ? ['renter','rentee'] : [u.roles]).map(function(r) {
     return '<span class="badge badge-info"><i class="' + (r==='renter'?'lucide-search':'lucide-package') + '" style="font-size:11px"></i> ' + (r==='renter'?'Renter':'Owner') + '</span>';
   }).join('');
-  el.innerHTML = '<div class="profile-card"><div class="profile-header"><div class="profile-avatar">' + u.avatar + '</div><div><h3 style="font-size:18px;font-weight:700">' + u.fname + ' ' + u.lname + '</h3><p style="color:var(--text2);font-size:14px">' + u.email + '</p><div style="display:flex;gap:6px;margin-top:8px">' + roleBadges + '</div></div></div><div class="divider"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:14px"><div class="form-group"><label class="form-label">First name</label><input class="form-input" id="profile-fname" value="' + u.fname + '" /></div><div class="form-group"><label class="form-label">Last name</label><input class="form-input" id="profile-lname" value="' + u.lname + '" /></div></div><div class="form-group"><label class="form-label">Email address</label><input class="form-input" value="' + u.email + '" disabled style="opacity:.6" /></div><button class="btn btn-primary btn-sm" onclick="saveProfile()"><i class="lucide-check" style="font-size:14px"></i> Save changes</button></div>';
+  el.innerHTML = '<div class="profile-card"><div class="profile-header"><div class="profile-avatar">' + escapeHtml(u.avatar) + '</div><div><h3 style="font-size:18px;font-weight:700">' + escapeHtml(u.fname) + ' ' + escapeHtml(u.lname) + '</h3><p style="color:var(--text2);font-size:14px">' + escapeHtml(u.email) + '</p><div style="display:flex;gap:6px;margin-top:8px">' + roleBadges + '</div></div></div><div class="divider"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:14px"><div class="form-group"><label class="form-label">First name</label><input class="form-input" id="profile-fname" value="' + escapeHtml(u.fname) + '" /></div><div class="form-group"><label class="form-label">Last name</label><input class="form-input" id="profile-lname" value="' + escapeHtml(u.lname) + '" /></div></div><div class="form-group"><label class="form-label">Email address</label><input class="form-input" value="' + escapeHtml(u.email) + '" disabled style="opacity:.6" /></div><button class="btn btn-primary btn-sm" onclick="saveProfile()"><i class="lucide-check" style="font-size:14px"></i> Save changes</button></div>';
 }
 
 async function saveProfile() {
+  const btn = document.querySelector('.profile-card button.btn-primary');
+  const originalText = btn ? btn.innerHTML : 'Save changes';
   const fname = (document.getElementById('profile-fname') || {}).value || '';
   const lname = (document.getElementById('profile-lname') || {}).value || '';
+  if (btn) { btn.disabled = true; btn.innerHTML = 'Processing...'; }
   try {
     const data = await api('/api/profile', 'PUT', { fname, lname });
     state.currentUser = data.user;
     showToast('Profile updated successfully', 'success');
   } catch(e) { showToast(e.message, 'error'); }
+  finally { if (btn) { btn.disabled = false; btn.innerHTML = originalText; } }
 }
 
 async function updateReqBadge() {
@@ -404,10 +434,13 @@ function calcModalCost() {
 }
 
 async function submitRentalRequest() {
+  const btn = document.querySelector('.modal-actions button.btn-primary');
+  const originalText = btn ? btn.innerHTML : 'Send request';
   const s = document.getElementById('modal-start').value;
   const e = document.getElementById('modal-end').value;
   if (!s || !e) { showToast('Please select start and end dates', 'error'); return; }
   if (s >= e)   { showToast('End date must be after start date', 'error'); return; }
+  if (btn) { btn.disabled = true; btn.innerHTML = 'Processing...'; }
   try {
     await api('/api/requests', 'POST', {
       item_id:    state.pendingModalItemId,
@@ -419,6 +452,7 @@ async function submitRentalRequest() {
     showToast('Request sent! Waiting for owner approval.', 'success');
     renderMyRentals();
   } catch(e) { showToast(e.message, 'error'); }
+  finally { if (btn) { btn.disabled = false; btn.innerHTML = originalText; } }
 }
 
 function closeModalOverlay(ev) {
@@ -430,29 +464,45 @@ function closeModalOverlay(ev) {
 // LISTING ACTIONS
 // ══════════════════════════════════
 async function addListing() {
+  const btn = document.querySelector('#rentee-add-listing button.btn-primary');
+  const originalText = btn ? btn.innerHTML : 'Publish listing';
+
   const title  = document.getElementById('new-title').value.trim();
   const cat    = document.getElementById('new-cat').value;
   const desc   = document.getElementById('new-desc').value.trim();
   const price  = document.getElementById('new-price').value;
   const loc    = document.getElementById('new-location').value.trim();
-  const imgUrl = document.getElementById('new-img-url').value.trim();
-  const prev   = document.getElementById('img-preview');
-  const img    = imgUrl || (prev && prev.src && !prev.src.endsWith(window.location.href) ? prev.src : '');
+  const fileInput = document.getElementById('file-input');
 
   if (!title || !cat || !desc || !price || !loc) { showToast('Please fill in all required fields', 'error'); return; }
-  if (!img) { showToast('Please add an image URL for your listing', 'error'); return; }
+  if (!fileInput || !fileInput.files || !fileInput.files[0]) { showToast('Please upload a photo for your listing', 'error'); return; }
+
+  if (btn) { btn.disabled = true; btn.innerHTML = 'Processing...'; }
 
   try {
-    await api('/api/listings', 'POST', { title, category: cat, description: desc, price: parseFloat(price), location: loc, img_url: img });
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('category', cat);
+    formData.append('description', desc);
+    formData.append('price', price);
+    formData.append('location', loc);
+    formData.append('img', fileInput.files[0]);
+
+    await api('/api/listings', 'POST', formData);
     clearListingForm();
     showToast('Listing published successfully!', 'success');
     showPanel('rentee', 'my-listings');
-  } catch(e) { showToast(e.message, 'error'); }
+  } catch(e) { 
+    showToast(e.message, 'error'); 
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = originalText; }
+  }
 }
 
 function clearListingForm() {
-  ['new-title','new-desc','new-price','new-location','new-img-url'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  ['new-title','new-desc','new-price','new-location'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
   const cat = document.getElementById('new-cat'); if(cat) cat.value = '';
+  const fileInput = document.getElementById('file-input'); if(fileInput) fileInput.value = '';
   const prev = document.getElementById('img-preview'); if(prev) { prev.src = ''; prev.style.display = 'none'; }
 }
 
@@ -461,11 +511,6 @@ function previewImage(input) {
   const reader = new FileReader();
   reader.onload = function(e) { const img = document.getElementById('img-preview'); if(img) { img.src = e.target.result; img.style.display = 'block'; } };
   reader.readAsDataURL(input.files[0]);
-}
-
-function previewUrl(url) {
-  const img = document.getElementById('img-preview'); if(!img) return;
-  if (url) { img.src = url; img.style.display = 'block'; } else { img.src = ''; img.style.display = 'none'; }
 }
 
 async function toggleItemStatus(id) {

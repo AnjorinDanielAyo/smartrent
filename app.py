@@ -12,12 +12,18 @@ from flask_bcrypt import Bcrypt
 from config import Config
 from database import get_db, init_app, init_db
 import os
+import re
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.config.from_object(Config)
 
 bcrypt = Bcrypt(app)
 init_app(app)
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    return jsonify({'error': 'An internal server error occurred.'}), 500
 
 
 # ── Auto-create & seed DB on first run ──
@@ -82,8 +88,8 @@ def register():
 
     if not all([fname, lname, email, password]):
         return jsonify({'error': 'All fields are required.'}), 400
-    if len(password) < 6:
-        return jsonify({'error': 'Password must be at least 6 characters.'}), 400
+    if len(password) < 8 or not re.search(r'[A-Za-z]', password) or not re.search(r'[0-9]', password):
+        return jsonify({'error': 'Password must be at least 8 characters, one letter, and one number.'}), 400
 
     db = get_db()
     existing = db.execute('SELECT id FROM users WHERE email = ?', (email,)).fetchone()
@@ -156,6 +162,7 @@ def get_listings():
     category = request.args.get('category', '')
     status   = request.args.get('status', '')
     search   = request.args.get('search', '')
+    page     = request.args.get('page', 1, type=int)
     uid      = session.get('user_id')
 
     query  = '''
@@ -181,7 +188,11 @@ def get_listings():
         s = '%' + search + '%'
         params.extend([s, s, s])
 
-    query += ' ORDER BY l.created_at DESC'
+    limit = 10
+    offset = (page - 1) * limit
+    query += ' ORDER BY l.created_at DESC LIMIT ? OFFSET ?'
+    params.extend([limit, offset])
+
     rows = db.execute(query, params).fetchall()
     listings = []
     for r in rows:
@@ -196,8 +207,11 @@ def get_listings():
 def my_listings():
     db  = get_db()
     uid = session['user_id']
+    page = request.args.get('page', 1, type=int)
+    limit = 10
+    offset = (page - 1) * limit
     rows = db.execute(
-        'SELECT * FROM listings WHERE owner_id = ? ORDER BY created_at DESC', (uid,)
+        'SELECT * FROM listings WHERE owner_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?', (uid, limit, offset)
     ).fetchall()
     return jsonify({'listings': [row_to_dict(r) for r in rows]}), 200
 
@@ -205,25 +219,35 @@ def my_listings():
 @app.route('/api/listings', methods=['POST'])
 @login_required
 def add_listing():
-    data  = request.get_json()
-    title = (data.get('title') or '').strip()
-    cat   = (data.get('category') or '').strip()
-    desc  = (data.get('description') or '').strip()
-    price = data.get('price')
-    loc   = (data.get('location') or '').strip()
-    img   = (data.get('img_url') or '').strip()
+    title = (request.form.get('title') or '').strip()
+    cat   = (request.form.get('category') or '').strip()
+    desc  = (request.form.get('description') or '').strip()
+    price = request.form.get('price')
+    loc   = (request.form.get('location') or '').strip()
 
     if not all([title, cat, desc, price, loc]):
         return jsonify({'error': 'All fields are required.'}), 400
-    if not img:
-        return jsonify({'error': 'Please provide an image URL for your listing.'}), 400
+    if 'img' not in request.files:
+        return jsonify({'error': 'Please provide an image file for your listing.'}), 400
+    
+    file = request.files['img']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file.'}), 400
+        
+    filename = secure_filename(file.filename)
+    upload_folder = os.path.join(app.root_path, 'static', 'uploads')
+    os.makedirs(upload_folder, exist_ok=True)
+    file_path = os.path.join(upload_folder, filename)
+    file.save(file_path)
+    
+    img_url = f'/static/uploads/{filename}'
 
     db  = get_db()
     uid = session['user_id']
     cur = db.execute(
         '''INSERT INTO listings (owner_id, title, category, description, price, location, img_url)
            VALUES (?, ?, ?, ?, ?, ?, ?)''',
-        (uid, title, cat, desc, float(price), loc, img)
+        (uid, title, cat, desc, float(price), loc, img_url)
     )
     db.commit()
     new_id = cur.lastrowid
@@ -397,6 +421,44 @@ def update_profile():
     u = row_to_dict(db.execute('SELECT id, fname, lname, email, roles FROM users WHERE id = ?', (uid,)).fetchone())
     u['avatar'] = (u['fname'][0] + u['lname'][0]).upper()
     return jsonify({'user': u}), 200
+
+
+# ══════════════════════════════════════
+# ANALYTICS ROUTE
+# ══════════════════════════════════════
+
+@app.route('/api/analytics', methods=['GET'])
+@login_required
+def get_analytics():
+    db = get_db()
+    uid = session['user_id']
+
+    active_rentals_row = db.execute(
+        "SELECT COUNT(*) as count FROM listings WHERE owner_id = ? AND status = 'rented'",
+        (uid,)
+    ).fetchone()
+    active_rentals = active_rentals_row['count'] if active_rentals_row else 0
+
+    pending_requests_row = db.execute(
+        '''SELECT COUNT(*) as count 
+           FROM rental_requests r
+           JOIN listings l ON r.item_id = l.id
+           WHERE l.owner_id = ? AND r.status = 'pending' ''',
+        (uid,)
+    ).fetchone()
+    pending_requests = pending_requests_row['count'] if pending_requests_row else 0
+
+    estimated_earnings_row = db.execute(
+        "SELECT SUM(price) as total FROM listings WHERE owner_id = ? AND status = 'rented'",
+        (uid,)
+    ).fetchone()
+    estimated_earnings = estimated_earnings_row['total'] if estimated_earnings_row and estimated_earnings_row['total'] else 0.0
+
+    return jsonify({
+        'active_rentals': active_rentals,
+        'pending_requests': pending_requests,
+        'estimated_earnings': estimated_earnings
+    }), 200
 
 
 # ══════════════════════════════════════
