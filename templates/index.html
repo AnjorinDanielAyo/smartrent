@@ -22,17 +22,49 @@
       Smart<span>Rent</span>
     </div>
     <div class="nav-links">
-      <a class="nav-link">Home</a>
-      <a class="nav-link">Categories</a>
-      <a class="nav-link">How it works</a>
+      <a class="nav-link" onclick="scrollToSection('hero-section')">Home</a>
+      <a class="nav-link" onclick="scrollToSection('categories-section')">Categories</a>
+      <a class="nav-link" onclick="scrollToSection('how-it-works-section')">How it works</a>
     </div>
     <div class="nav-actions">
       <button class="btn btn-ghost btn-sm" onclick="showPage('auth','login')">Sign in</button>
       <button class="btn btn-primary btn-sm" onclick="showPage('auth','register')">Get started</button>
     </div>
+    <button class="nav-hamburger" id="nav-hamburger" onclick="toggleMobileNav()" aria-label="Open menu">
+      <i class="lucide-menu" style="font-size:22px"></i>
+    </button>
   </nav>
 
-  <section class="hero">
+  <!-- MOBILE NAV DRAWER -->
+  <div class="mobile-nav-overlay" id="mobile-nav-overlay" onclick="closeMobileNav()"></div>
+  <div class="mobile-nav-drawer" id="mobile-nav-drawer">
+    <div class="mobile-nav-header">
+      <div class="logo">
+        <i class="lucide-key-round" style="font-size:20px;color:var(--orange)"></i>
+        Smart<span>Rent</span>
+      </div>
+      <button onclick="closeMobileNav()" style="background:none;border:none;color:var(--text2);font-size:22px;cursor:pointer">
+        <i class="lucide-x"></i>
+      </button>
+    </div>
+    <nav class="mobile-nav-links">
+      <a class="mobile-nav-link" onclick="closeMobileNav();scrollToSection('hero-section')">
+        <i class="lucide-home"></i> Home
+      </a>
+      <a class="mobile-nav-link" onclick="closeMobileNav();scrollToSection('categories-section')">
+        <i class="lucide-grid"></i> Categories
+      </a>
+      <a class="mobile-nav-link" onclick="closeMobileNav();scrollToSection('how-it-works-section')">
+        <i class="lucide-info"></i> How it works
+      </a>
+    </nav>
+    <div class="mobile-nav-actions">
+      <button class="btn btn-ghost w-full" style="justify-content:center" onclick="closeMobileNav();showPage('auth','login')">Sign in</button>
+      <button class="btn btn-primary w-full" style="justify-content:center;margin-top:10px" onclick="closeMobileNav();showPage('auth','register')">Get started</button>
+    </div>
+  </div>
+
+  <section class="hero" id="hero-section">
     <div class="hero-eyebrow">
       <i class="lucide-sparkles" style="font-size:13px;color:var(--orange)"></i>
       Universal Rental Platform &mdash; <span style="color:var(--orange);font-weight:600">Nigeria's #1</span>
@@ -62,7 +94,7 @@
     </div>
   </section>
 
-  <section class="section">
+  <section class="section" id="categories-section">
     <div class="section-label">Categories</div>
     <div class="section-title">Browse by category</div>
     <p class="section-sub">From construction machinery to event gear — if you need it temporarily, you'll find it here.</p>
@@ -107,7 +139,7 @@
     </div>
   </section>
 
-  <section class="section">
+  <section class="section" id="how-it-works-section">
     <div class="section-label">How it works</div>
     <div class="section-title">Simple from start to finish</div>
     <div class="steps">
@@ -214,8 +246,13 @@
         </div>
         <div class="form-group">
           <label class="form-label">Password</label>
-          <input class="form-input" type="password" id="login-password" placeholder="••••••••"
-            onkeydown="if(event.key==='Enter')handleLogin()" />
+          <div class="pw-wrap">
+            <input class="form-input" type="password" id="login-password" placeholder="••••••••"
+              onkeydown="if(event.key==='Enter')handleLogin()" />
+            <button type="button" class="pw-toggle" onclick="togglePw('login-password',this)" aria-label="Toggle password">
+              <i class="lucide-eye"></i>
+            </button>
+          </div>
         </div>
         <button class="btn btn-primary w-full" style="justify-content:center;margin-top:8px" onclick="handleLogin()">
           Sign in
@@ -254,7 +291,21 @@
         </div>
         <div class="form-group">
           <label class="form-label">Password</label>
-          <input class="form-input" type="password" id="reg-password" placeholder="Min. 6 characters" />
+          <div class="pw-wrap">
+            <input class="form-input" type="password" id="reg-password" placeholder="Min. 8 characters" />
+            <button type="button" class="pw-toggle" onclick="togglePw('reg-password',this)" aria-label="Toggle password">
+              <i class="lucide-eye"></i>
+            </button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Confirm Password</label>
+          <div class="pw-wrap">
+            <input class="form-input" type="password" id="reg-confirm-password" placeholder="••••••••" />
+            <button type="button" class="pw-toggle" onclick="togglePw('reg-confirm-password',this)" aria-label="Toggle confirm password">
+              <i class="lucide-eye"></i>
+            </button>
+          </div>
         </div>
         <div class="form-group">
           <label class="form-label" style="margin-bottom:10px">I want to</label>
@@ -294,24 +345,27 @@
 ══════════════════════════════════════════ -->
 <div id="page-renter" class="page">
   <div class="dash-wrap">
-    <aside class="sidebar">
+    <aside class="sidebar" id="renter-sidebar">
       <div class="sidebar-logo">
         <div class="logo" style="font-size:17px;cursor:pointer" onclick="showPage('landing')">
           <i class="lucide-key-round" style="font-size:19px;color:var(--orange)"></i> Smart<span>Rent</span>
         </div>
+        <button class="sidebar-close-btn" onclick="closeSidebar('renter-sidebar')">
+          <i class="lucide-x"></i>
+        </button>
       </div>
       <nav class="sidebar-nav">
         <div class="sidebar-section">Renter</div>
-        <a class="sidebar-link active" onclick="showPanel('renter','browse')">
+        <a class="sidebar-link active" onclick="showPanel('renter','browse');closeSidebar('renter-sidebar')">
           <i class="lucide-search"></i> Browse items
         </a>
-        <a class="sidebar-link" onclick="showPanel('renter','my-rentals')">
+        <a class="sidebar-link" onclick="showPanel('renter','my-rentals');closeSidebar('renter-sidebar')">
           <i class="lucide-calendar"></i> My rentals
         </a>
-        <a class="sidebar-link" onclick="showPanel('renter','history')">
+        <a class="sidebar-link" onclick="showPanel('renter','history');closeSidebar('renter-sidebar')">
           <i class="lucide-clock"></i> Rental history
         </a>
-        <a class="sidebar-link" onclick="showPanel('renter','profile')">
+        <a class="sidebar-link" onclick="showPanel('renter','profile');closeSidebar('renter-sidebar')">
           <i class="lucide-user"></i> Profile
         </a>
       </nav>
@@ -328,13 +382,17 @@
         </div>
       </div>
     </aside>
+    <div class="sidebar-mobile-overlay" id="renter-sidebar-overlay" onclick="closeSidebar('renter-sidebar')"></div>
 
     <main class="dash-main">
       <div class="dash-topbar">
+        <button class="topbar-hamburger" onclick="openSidebar('renter-sidebar')">
+          <i class="lucide-menu" style="font-size:20px"></i>
+        </button>
         <h2 id="renter-panel-title">Browse items</h2>
         <div class="topbar-actions">
           <button class="btn btn-ghost btn-sm" onclick="confirmLogout()">
-            <i class="lucide-log-out" style="font-size:16px"></i> Sign out
+            <i class="lucide-log-out" style="font-size:16px"></i> <span class="hide-sm">Sign out</span>
           </button>
         </div>
       </div>
@@ -414,6 +472,22 @@
       </div>
     </main>
   </div>
+
+  <!-- MOBILE BOTTOM NAV: Renter -->
+  <nav class="mobile-bottom-nav">
+    <a class="mobile-bottom-link active" id="renter-bn-browse" onclick="showPanel('renter','browse');setBottomNav('renter','browse')">
+      <i class="lucide-search"></i><span>Browse</span>
+    </a>
+    <a class="mobile-bottom-link" id="renter-bn-my-rentals" onclick="showPanel('renter','my-rentals');setBottomNav('renter','my-rentals')">
+      <i class="lucide-calendar"></i><span>Rentals</span>
+    </a>
+    <a class="mobile-bottom-link" id="renter-bn-history" onclick="showPanel('renter','history');setBottomNav('renter','history')">
+      <i class="lucide-clock"></i><span>History</span>
+    </a>
+    <a class="mobile-bottom-link" id="renter-bn-profile" onclick="showPanel('renter','profile');setBottomNav('renter','profile')">
+      <i class="lucide-user"></i><span>Profile</span>
+    </a>
+  </nav>
 </div>
 
 
@@ -422,28 +496,31 @@
 ══════════════════════════════════════════ -->
 <div id="page-rentee" class="page">
   <div class="dash-wrap">
-    <aside class="sidebar">
+    <aside class="sidebar" id="rentee-sidebar">
       <div class="sidebar-logo">
         <div class="logo" style="font-size:17px;cursor:pointer" onclick="showPage('landing')">
           <i class="lucide-key-round" style="font-size:19px;color:var(--orange)"></i> Smart<span>Rent</span>
         </div>
+        <button class="sidebar-close-btn" onclick="closeSidebar('rentee-sidebar')">
+          <i class="lucide-x"></i>
+        </button>
       </div>
       <nav class="sidebar-nav">
         <div class="sidebar-section">Owner</div>
-        <a class="sidebar-link active" onclick="showPanel('rentee','overview')">
+        <a class="sidebar-link active" onclick="showPanel('rentee','overview');closeSidebar('rentee-sidebar')">
           <i class="lucide-layout-dashboard"></i> Overview
         </a>
-        <a class="sidebar-link" onclick="showPanel('rentee','my-listings')">
+        <a class="sidebar-link" onclick="showPanel('rentee','my-listings');closeSidebar('rentee-sidebar')">
           <i class="lucide-list"></i> My listings
         </a>
-        <a class="sidebar-link" onclick="showPanel('rentee','requests')">
+        <a class="sidebar-link" onclick="showPanel('rentee','requests');closeSidebar('rentee-sidebar')">
           <i class="lucide-inbox"></i> Requests
           <span id="req-badge" class="req-badge" style="display:none">0</span>
         </a>
-        <a class="sidebar-link" onclick="showPanel('rentee','add-listing')">
+        <a class="sidebar-link" onclick="showPanel('rentee','add-listing');closeSidebar('rentee-sidebar')">
           <i class="lucide-plus-circle"></i> Add listing
         </a>
-        <a class="sidebar-link" onclick="showPanel('rentee','profile')">
+        <a class="sidebar-link" onclick="showPanel('rentee','profile');closeSidebar('rentee-sidebar')">
           <i class="lucide-user"></i> Profile
         </a>
       </nav>
@@ -460,16 +537,20 @@
         </div>
       </div>
     </aside>
+    <div class="sidebar-mobile-overlay" id="rentee-sidebar-overlay" onclick="closeSidebar('rentee-sidebar')"></div>
 
     <main class="dash-main">
       <div class="dash-topbar">
+        <button class="topbar-hamburger" onclick="openSidebar('rentee-sidebar')">
+          <i class="lucide-menu" style="font-size:20px"></i>
+        </button>
         <h2 id="rentee-panel-title">Overview</h2>
         <div class="topbar-actions">
           <button class="btn btn-primary btn-sm" onclick="showPanel('rentee','add-listing')">
-            <i class="lucide-plus" style="font-size:14px"></i> Add listing
+            <i class="lucide-plus" style="font-size:14px"></i> <span class="hide-sm">Add listing</span>
           </button>
           <button class="btn btn-ghost btn-sm" onclick="confirmLogout()">
-            <i class="lucide-log-out" style="font-size:16px"></i> Sign out
+            <i class="lucide-log-out" style="font-size:16px"></i> <span class="hide-sm">Sign out</span>
           </button>
         </div>
       </div>
@@ -597,6 +678,25 @@
       </div>
     </main>
   </div>
+
+  <!-- MOBILE BOTTOM NAV: Owner -->
+  <nav class="mobile-bottom-nav">
+    <a class="mobile-bottom-link active" id="rentee-bn-overview" onclick="showPanel('rentee','overview');setBottomNav('rentee','overview')">
+      <i class="lucide-layout-dashboard"></i><span>Overview</span>
+    </a>
+    <a class="mobile-bottom-link" id="rentee-bn-my-listings" onclick="showPanel('rentee','my-listings');setBottomNav('rentee','my-listings')">
+      <i class="lucide-list"></i><span>Listings</span>
+    </a>
+    <a class="mobile-bottom-link" id="rentee-bn-requests" onclick="showPanel('rentee','requests');setBottomNav('rentee','requests')">
+      <i class="lucide-inbox"></i><span>Requests</span>
+    </a>
+    <a class="mobile-bottom-link" id="rentee-bn-add-listing" onclick="showPanel('rentee','add-listing');setBottomNav('rentee','add-listing')">
+      <i class="lucide-plus-circle"></i><span>Add</span>
+    </a>
+    <a class="mobile-bottom-link" id="rentee-bn-profile" onclick="showPanel('rentee','profile');setBottomNav('rentee','profile')">
+      <i class="lucide-user"></i><span>Profile</span>
+    </a>
+  </nav>
 </div>
 
 

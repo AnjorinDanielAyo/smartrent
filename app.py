@@ -4,6 +4,7 @@
 # Smart Design & Construction 2025/2026
 # ══════════════════════════════════════
 
+from app import img_url
 from flask import (
     Flask, request, session, jsonify,
     render_template, redirect, url_for
@@ -13,6 +14,10 @@ from config import Config
 from database import get_db, init_app, init_db
 import os
 import re
+import traceback
+from datetime import datetime
+from werkzeug.utils import secure_filename
+import re
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
@@ -20,6 +25,14 @@ app.config.from_object(Config)
 
 bcrypt = Bcrypt(app)
 init_app(app)
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    if hasattr(e, 'code'):
+        return jsonify({'error': str(e)}), e.code
+    print(f"Server Error: {e}")
+    traceback.print_exc()
+    return jsonify({'error': 'An internal server error occurred.'}), 500
 
 @app.errorhandler(Exception)
 def handle_exception(e):
@@ -84,12 +97,15 @@ def register():
     lname    = (data.get('lname') or '').strip()
     email    = (data.get('email') or '').strip().lower()
     password = (data.get('password') or '')
+    confirm_password = (data.get('confirm_password') or '')
     roles    = (data.get('roles') or 'renter')
 
-    if not all([fname, lname, email, password]):
+    if not all([fname, lname, email, password, confirm_password]):
         return jsonify({'error': 'All fields are required.'}), 400
-    if len(password) < 8 or not re.search(r'[A-Za-z]', password) or not re.search(r'[0-9]', password):
-        return jsonify({'error': 'Password must be at least 8 characters, one letter, and one number.'}), 400
+    if password != confirm_password:
+        return jsonify({'error': 'Passwords do not match.'}), 400
+    if len(password) < 8 or not re.search(r'[A-Za-z]', password) or not re.search(r'\d', password):
+        return jsonify({'error': 'Password must be at least 8 characters and contain both letters and numbers.'}), 400
 
     db = get_db()
     existing = db.execute('SELECT id FROM users WHERE email = ?', (email,)).fetchone()
@@ -164,6 +180,8 @@ def get_listings():
     search   = request.args.get('search', '')
     page     = request.args.get('page', 1, type=int)
     uid      = session.get('user_id')
+    page     = int(request.args.get('page', 1))
+    limit    = int(request.args.get('limit', 10))
 
     query  = '''
         SELECT l.*, u.fname, u.lname
@@ -188,9 +206,8 @@ def get_listings():
         s = '%' + search + '%'
         params.extend([s, s, s])
 
-    limit = 10
-    offset = (page - 1) * limit
     query += ' ORDER BY l.created_at DESC LIMIT ? OFFSET ?'
+    offset = (page - 1) * limit
     params.extend([limit, offset])
 
     rows = db.execute(query, params).fetchall()
@@ -225,22 +242,17 @@ def add_listing():
     price = request.form.get('price')
     loc   = (request.form.get('location') or '').strip()
 
+    file = request.files.get('file')
     if not all([title, cat, desc, price, loc]):
         return jsonify({'error': 'All fields are required.'}), 400
-    if 'img' not in request.files:
-        return jsonify({'error': 'Please provide an image file for your listing.'}), 400
-    
-    file = request.files['img']
-    if file.filename == '':
-        return jsonify({'error': 'No selected file.'}), 400
-        
+    if not file or not file.filename:
+        return jsonify({'error': 'Please provide an image for your listing.'}), 400
+
     filename = secure_filename(file.filename)
     upload_folder = os.path.join(app.root_path, 'static', 'uploads')
     os.makedirs(upload_folder, exist_ok=True)
-    file_path = os.path.join(upload_folder, filename)
-    file.save(file_path)
-    
-    img_url = f'/static/uploads/{filename}'
+    file.save(os.path.join(upload_folder, filename))
+    img = f'/static/uploads/{filename}'
 
     db  = get_db()
     uid = session['user_id']
@@ -301,8 +313,15 @@ def submit_request():
 
     if not all([item_id, start_date, end_date]):
         return jsonify({'error': 'Item, start date and end date are required.'}), 400
-    if start_date >= end_date:
-        return jsonify({'error': 'End date must be after start date.'}), 400
+    
+    try:
+        sd = datetime.strptime(start_date, '%Y-%m-%d')
+        ed = datetime.strptime(end_date, '%Y-%m-%d')
+        delta = (ed - sd).days
+        if delta <= 0:
+            return jsonify({'error': 'End date must be strictly after start date.'}), 400
+    except ValueError:
+        return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD.'}), 400
 
     db  = get_db()
     uid = session['user_id']
@@ -313,6 +332,8 @@ def submit_request():
     if item['status'] != 'available':
         return jsonify({'error': 'This item is not currently available.'}), 409
 
+    total_cost = delta * item['price']
+
     cur = db.execute(
         '''INSERT INTO rental_requests (item_id, renter_id, start_date, end_date, message)
            VALUES (?, ?, ?, ?, ?)''',
@@ -320,6 +341,8 @@ def submit_request():
     )
     db.commit()
     req = row_to_dict(db.execute('SELECT * FROM rental_requests WHERE id = ?', (cur.lastrowid,)).fetchone())
+    req['total_cost'] = total_cost
+    req['duration_days'] = delta
     return jsonify({'request': req}), 201
 
 
