@@ -4,7 +4,6 @@
 # Smart Design & Construction 2025/2026
 # ══════════════════════════════════════
 
-from app import img_url
 from flask import (
     Flask, request, session, jsonify,
     render_template, redirect, url_for
@@ -16,8 +15,6 @@ import os
 import re
 import traceback
 from datetime import datetime
-from werkzeug.utils import secure_filename
-import re
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
@@ -34,14 +31,9 @@ def handle_exception(e):
     traceback.print_exc()
     return jsonify({'error': 'An internal server error occurred.'}), 500
 
-@app.errorhandler(Exception)
-def handle_exception(e):
-    return jsonify({'error': 'An internal server error occurred.'}), 500
-
-
 # ── Auto-create & seed DB on first run ──
 def ensure_db():
-    if not os.path.exists(app.config['DATABASE']):
+    if not os.path.exists(app.config.get('DATABASE', 'smartrent.db')):
         with app.app_context():
             init_db()
             # Re-hash demo passwords properly
@@ -178,7 +170,6 @@ def get_listings():
     category = request.args.get('category', '')
     status   = request.args.get('status', '')
     search   = request.args.get('search', '')
-    page     = request.args.get('page', 1, type=int)
     uid      = session.get('user_id')
     page     = int(request.args.get('page', 1))
     limit    = int(request.args.get('limit', 10))
@@ -252,7 +243,9 @@ def add_listing():
     upload_folder = os.path.join(app.root_path, 'static', 'uploads')
     os.makedirs(upload_folder, exist_ok=True)
     file.save(os.path.join(upload_folder, filename))
-    img = f'/static/uploads/{filename}'
+    
+    # FIXED: Replaced 'img' with 'img_url'
+    img_url = f'/static/uploads/{filename}'
 
     db  = get_db()
     uid = session['user_id']
