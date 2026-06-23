@@ -12,12 +12,24 @@ from flask_bcrypt import Bcrypt
 from config import Config
 from database import get_db, init_app, init_db
 import os
+import re
+import traceback
+from datetime import datetime
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.config.from_object(Config)
 
 bcrypt = Bcrypt(app)
 init_app(app)
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    if hasattr(e, 'code'):
+        return jsonify({'error': str(e)}), e.code
+    print(f"Server Error: {e}")
+    traceback.print_exc()
+    return jsonify({'error': 'An internal server error occurred.'}), 500
 
 
 # ── Auto-create & seed DB on first run ──
@@ -78,12 +90,15 @@ def register():
     lname    = (data.get('lname') or '').strip()
     email    = (data.get('email') or '').strip().lower()
     password = (data.get('password') or '')
+    confirm_password = (data.get('confirm_password') or '')
     roles    = (data.get('roles') or 'renter')
 
-    if not all([fname, lname, email, password]):
+    if not all([fname, lname, email, password, confirm_password]):
         return jsonify({'error': 'All fields are required.'}), 400
-    if len(password) < 6:
-        return jsonify({'error': 'Password must be at least 6 characters.'}), 400
+    if password != confirm_password:
+        return jsonify({'error': 'Passwords do not match.'}), 400
+    if len(password) < 8 or not re.search(r'[A-Za-z]', password) or not re.search(r'\d', password):
+        return jsonify({'error': 'Password must be at least 8 characters and contain both letters and numbers.'}), 400
 
     db = get_db()
     existing = db.execute('SELECT id FROM users WHERE email = ?', (email,)).fetchone()
@@ -157,6 +172,8 @@ def get_listings():
     status   = request.args.get('status', '')
     search   = request.args.get('search', '')
     uid      = session.get('user_id')
+    page     = int(request.args.get('page', 1))
+    limit    = int(request.args.get('limit', 10))
 
     query  = '''
         SELECT l.*, u.fname, u.lname
@@ -181,7 +198,10 @@ def get_listings():
         s = '%' + search + '%'
         params.extend([s, s, s])
 
-    query += ' ORDER BY l.created_at DESC'
+    query += ' ORDER BY l.created_at DESC LIMIT ? OFFSET ?'
+    offset = (page - 1) * limit
+    params.extend([limit, offset])
+
     rows = db.execute(query, params).fetchall()
     listings = []
     for r in rows:
@@ -205,18 +225,23 @@ def my_listings():
 @app.route('/api/listings', methods=['POST'])
 @login_required
 def add_listing():
-    data  = request.get_json()
-    title = (data.get('title') or '').strip()
-    cat   = (data.get('category') or '').strip()
-    desc  = (data.get('description') or '').strip()
-    price = data.get('price')
-    loc   = (data.get('location') or '').strip()
-    img   = (data.get('img_url') or '').strip()
+    title = (request.form.get('title') or '').strip()
+    cat   = (request.form.get('category') or '').strip()
+    desc  = (request.form.get('description') or '').strip()
+    price = request.form.get('price')
+    loc   = (request.form.get('location') or '').strip()
 
+    file = request.files.get('file')
     if not all([title, cat, desc, price, loc]):
         return jsonify({'error': 'All fields are required.'}), 400
-    if not img:
-        return jsonify({'error': 'Please provide an image URL for your listing.'}), 400
+    if not file or not file.filename:
+        return jsonify({'error': 'Please provide an image for your listing.'}), 400
+
+    filename = secure_filename(file.filename)
+    upload_folder = os.path.join(app.root_path, 'static', 'uploads')
+    os.makedirs(upload_folder, exist_ok=True)
+    file.save(os.path.join(upload_folder, filename))
+    img = f'/static/uploads/{filename}'
 
     db  = get_db()
     uid = session['user_id']
@@ -277,8 +302,15 @@ def submit_request():
 
     if not all([item_id, start_date, end_date]):
         return jsonify({'error': 'Item, start date and end date are required.'}), 400
-    if start_date >= end_date:
-        return jsonify({'error': 'End date must be after start date.'}), 400
+    
+    try:
+        sd = datetime.strptime(start_date, '%Y-%m-%d')
+        ed = datetime.strptime(end_date, '%Y-%m-%d')
+        delta = (ed - sd).days
+        if delta <= 0:
+            return jsonify({'error': 'End date must be strictly after start date.'}), 400
+    except ValueError:
+        return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD.'}), 400
 
     db  = get_db()
     uid = session['user_id']
@@ -289,6 +321,8 @@ def submit_request():
     if item['status'] != 'available':
         return jsonify({'error': 'This item is not currently available.'}), 409
 
+    total_cost = delta * item['price']
+
     cur = db.execute(
         '''INSERT INTO rental_requests (item_id, renter_id, start_date, end_date, message)
            VALUES (?, ?, ?, ?, ?)''',
@@ -296,6 +330,8 @@ def submit_request():
     )
     db.commit()
     req = row_to_dict(db.execute('SELECT * FROM rental_requests WHERE id = ?', (cur.lastrowid,)).fetchone())
+    req['total_cost'] = total_cost
+    req['duration_days'] = delta
     return jsonify({'request': req}), 201
 
 

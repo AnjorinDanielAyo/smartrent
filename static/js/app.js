@@ -7,6 +7,7 @@
 const state = {
   currentUser: null,
   pendingModalItemId: null,
+  pendingModalItemPrice: 0,
 };
 
 // ══════════════════════════════════
@@ -29,6 +30,87 @@ async function api(path, method, body) {
 // ══════════════════════════════════
 // NAVIGATION
 // ══════════════════════════════════
+function scrollToSection(id) {
+  showPage('landing');
+  setTimeout(() => {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  }, 50);
+}
+
+// ── Mobile landing nav drawer ──
+function toggleMobileNav() {
+  const drawer  = document.getElementById('mobile-nav-drawer');
+  const overlay = document.getElementById('mobile-nav-overlay');
+  const isOpen  = drawer.classList.contains('open');
+  if (isOpen) {
+    drawer.classList.remove('open');
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  } else {
+    drawer.classList.add('open');
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+}
+function closeMobileNav() {
+  document.getElementById('mobile-nav-drawer').classList.remove('open');
+  document.getElementById('mobile-nav-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// ── Dashboard sidebar slide-in (mobile) ──
+function openSidebar(sidebarId) {
+  const sidebar  = document.getElementById(sidebarId);
+  const overlayId = sidebarId + '-overlay';
+  const overlay  = document.getElementById(overlayId);
+  if (sidebar)  sidebar.classList.add('open');
+  if (overlay)  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeSidebar(sidebarId) {
+  const sidebar  = document.getElementById(sidebarId);
+  const overlayId = sidebarId + '-overlay';
+  const overlay  = document.getElementById(overlayId);
+  if (sidebar)  sidebar.classList.remove('open');
+  if (overlay)  overlay.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// ── Mobile bottom nav active state ──
+function setBottomNav(dash, panel) {
+  document.querySelectorAll('#page-' + dash + ' .mobile-bottom-link').forEach(function(link) {
+    link.classList.remove('active');
+  });
+  const target = document.getElementById(dash + '-bn-' + panel);
+  if (target) target.classList.add('active');
+}
+
+
+function togglePasswordVisibility(inputId, iconEl) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  if (input.type === 'password') {
+    input.type = 'text';
+    iconEl.className = 'lucide-eye-off';
+  } else {
+    input.type = 'password';
+    iconEl.className = 'lucide-eye';
+  }
+}
+
+async function withLoading(btn, fn) {
+  if (!btn) return await fn();
+  const original = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<i class="lucide-loader animate-spin" style="display:inline-block"></i> Processing...`;
+  try {
+    return await fn();
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = original;
+  }
+}
 function showPage(page, tab) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-' + page).classList.add('active');
@@ -94,14 +176,17 @@ async function handleLogin() {
   const email = document.getElementById('login-email').value.trim();
   const pass  = document.getElementById('login-password').value;
   const errEl = document.getElementById('login-error');
-  try {
-    const data = await api('/api/login', 'POST', { email, password: pass });
-    errEl.style.display = 'none';
-    loginUser(data.user);
-  } catch (e) {
-    document.getElementById('login-error-text').textContent = e.message;
-    errEl.style.display = 'flex';
-  }
+  const btn = document.querySelector('#form-login .btn-primary');
+  await withLoading(btn, async () => {
+    try {
+      const data = await api('/api/login', 'POST', { email, password: pass });
+      errEl.style.display = 'none';
+      loginUser(data.user);
+    } catch (e) {
+      document.getElementById('login-error-text').textContent = e.message;
+      errEl.style.display = 'flex';
+    }
+  });
 }
 
 async function handleRegister() {
@@ -109,17 +194,33 @@ async function handleRegister() {
   const lname  = document.getElementById('reg-lname').value.trim();
   const email  = document.getElementById('reg-email').value.trim();
   const pass   = document.getElementById('reg-password').value;
+  const confirmPass = document.getElementById('reg-confirm-password').value;
   const isDual = document.getElementById('dual-role-check').checked;
   const roles  = isDual ? 'both' : selectedRole;
   const errEl  = document.getElementById('reg-error');
-  try {
-    const data = await api('/api/register', 'POST', { fname, lname, email, password: pass, roles });
-    errEl.style.display = 'none';
-    loginUser(data.user);
-  } catch (e) {
-    document.getElementById('reg-error-text').textContent = e.message;
+
+  if (pass !== confirmPass) {
+    document.getElementById('reg-error-text').textContent = "Passwords do not match.";
     errEl.style.display = 'flex';
+    return;
   }
+  if (pass.length < 8 || !/[A-Za-z]/.test(pass) || !/\d/.test(pass)) {
+    document.getElementById('reg-error-text').textContent = "Password must be at least 8 characters and contain both letters and numbers.";
+    errEl.style.display = 'flex';
+    return;
+  }
+
+  const btn = document.querySelector('#form-register .btn-primary');
+  await withLoading(btn, async () => {
+    try {
+      const data = await api('/api/register', 'POST', { fname, lname, email, password: pass, roles });
+      errEl.style.display = 'none';
+      loginUser(data.user);
+    } catch (e) {
+      document.getElementById('reg-error-text').textContent = e.message;
+      errEl.style.display = 'flex';
+    }
+  });
 }
 
 async function demoLogin(type) {
@@ -191,7 +292,7 @@ async function renderBrowse() {
         ? '<img src="' + item.img_url + '" alt="' + item.title + '" loading="lazy" onerror="this.parentElement.innerHTML=\'<div class=\\\'no-img\\\'><i class=\\\'lucide-image-off\\\'></i></div>\'" />'
         : '<div class="no-img"><i class="lucide-image-off"></i></div>';
       const actionBtn = item.status === 'available'
-        ? '<button class="btn btn-primary btn-sm w-full" style="margin-top:12px" onclick="openRentModal(' + item.id + ')"><i class="lucide-calendar-plus" style="font-size:14px"></i> Request rental</button>'
+        ? '<button class="btn btn-primary btn-sm w-full" style="margin-top:12px" onclick="openRentModal(' + item.id + ', ' + item.price + ', \'' + item.title.replace(/'/g, "\\'") + '\')"><i class="lucide-calendar-plus" style="font-size:14px"></i> Request rental</button>'
         : '<button class="btn btn-ghost btn-sm w-full" style="margin-top:12px;opacity:.5;cursor:not-allowed" disabled>Currently unavailable</button>';
       return [
         '<div class="item-card">',
@@ -357,11 +458,14 @@ function renderProfile(dash) {
 async function saveProfile() {
   const fname = (document.getElementById('profile-fname') || {}).value || '';
   const lname = (document.getElementById('profile-lname') || {}).value || '';
-  try {
-    const data = await api('/api/profile', 'PUT', { fname, lname });
-    state.currentUser = data.user;
-    showToast('Profile updated successfully', 'success');
-  } catch(e) { showToast(e.message, 'error'); }
+  const btn = document.querySelector('.profile-card .btn-primary');
+  await withLoading(btn, async () => {
+    try {
+      const data = await api('/api/profile', 'PUT', { fname, lname });
+      state.currentUser = data.user;
+      showToast('Profile updated successfully', 'success');
+    } catch(e) { showToast(e.message, 'error'); }
+  });
 }
 
 async function updateReqBadge() {
@@ -376,31 +480,32 @@ async function updateReqBadge() {
 // ══════════════════════════════════
 // RENTAL MODAL
 // ══════════════════════════════════
-function openRentModal(itemId) {
+function openRentModal(itemId, itemPrice, itemTitle) {
   state.pendingModalItemId = itemId;
-  document.getElementById('modal-item-name').textContent = 'Loading...';
+  state.pendingModalItemPrice = itemPrice;
+  document.getElementById('modal-item-name').textContent = itemTitle || 'Request rental';
   document.getElementById('modal-start').value = new Date().toISOString().split('T')[0];
   document.getElementById('modal-end').value   = '';
   document.getElementById('modal-msg').value   = '';
   document.getElementById('modal-cost').style.display = 'none';
   document.getElementById('rent-modal').style.display = 'flex';
-
-  // Fetch item title for modal
-  api('/api/listings?').then(function(data) {
-    // We need a single item endpoint; use list and find
-    api('/api/listings?').then(function() {}).catch(function() {});
-  }).catch(function() {});
-
-  // Simpler: just show the modal; cost calculated on date change
 }
 
 function calcModalCost() {
   const s = document.getElementById('modal-start').value;
   const e = document.getElementById('modal-end').value;
   if (!s || !e) return;
-  const days = Math.max(1, Math.ceil((new Date(e) - new Date(s)) / 86400000));
+  const sd = new Date(s);
+  const ed = new Date(e);
+  const delta = ed - sd;
+  if (delta <= 0) {
+    document.getElementById('modal-cost').style.display = 'none';
+    return;
+  }
+  const days = Math.ceil(delta / 86400000);
+  const cost = state.pendingModalItemPrice * days;
   document.getElementById('modal-cost').style.display   = 'flex';
-  document.getElementById('modal-cost-val').textContent = days + ' day' + (days > 1 ? 's' : '') + ' selected';
+  document.getElementById('modal-cost-val').textContent = '₦' + cost.toLocaleString() + ' (' + days + ' day' + (days > 1 ? 's' : '') + ')';
 }
 
 async function submitRentalRequest() {
@@ -408,17 +513,20 @@ async function submitRentalRequest() {
   const e = document.getElementById('modal-end').value;
   if (!s || !e) { showToast('Please select start and end dates', 'error'); return; }
   if (s >= e)   { showToast('End date must be after start date', 'error'); return; }
-  try {
-    await api('/api/requests', 'POST', {
-      item_id:    state.pendingModalItemId,
-      start_date: s,
-      end_date:   e,
-      message:    document.getElementById('modal-msg').value,
-    });
-    document.getElementById('rent-modal').style.display = 'none';
-    showToast('Request sent! Waiting for owner approval.', 'success');
-    renderMyRentals();
-  } catch(e) { showToast(e.message, 'error'); }
+  const btn = document.querySelector("#rent-modal .btn-primary");
+  await withLoading(btn, async () => {
+    try {
+      await api('/api/requests', 'POST', {
+        item_id:    state.pendingModalItemId,
+        start_date: s,
+        end_date:   e,
+        message:    document.getElementById('modal-msg').value,
+      });
+      document.getElementById('rent-modal').style.display = 'none';
+      showToast('Request sent! Waiting for owner approval.', 'success');
+      renderMyRentals();
+    } catch(e) { showToast(e.message, 'error'); }
+  });
 }
 
 function closeModalOverlay(ev) {
@@ -435,19 +543,39 @@ async function addListing() {
   const desc   = document.getElementById('new-desc').value.trim();
   const price  = document.getElementById('new-price').value;
   const loc    = document.getElementById('new-location').value.trim();
-  const imgUrl = document.getElementById('new-img-url').value.trim();
-  const prev   = document.getElementById('img-preview');
-  const img    = imgUrl || (prev && prev.src && !prev.src.endsWith(window.location.href) ? prev.src : '');
+  const fileInput = document.getElementById('file-input');
 
   if (!title || !cat || !desc || !price || !loc) { showToast('Please fill in all required fields', 'error'); return; }
-  if (!img) { showToast('Please add an image URL for your listing', 'error'); return; }
 
-  try {
-    await api('/api/listings', 'POST', { title, category: cat, description: desc, price: parseFloat(price), location: loc, img_url: img });
-    clearListingForm();
-    showToast('Listing published successfully!', 'success');
-    showPanel('rentee', 'my-listings');
-  } catch(e) { showToast(e.message, 'error'); }
+  const formData = new FormData();
+  formData.append('title', title);
+  formData.append('category', cat);
+  formData.append('description', desc);
+  formData.append('price', price);
+  formData.append('location', loc);
+
+  if (fileInput.files[0]) {
+    formData.append('file', fileInput.files[0]);
+  } else {
+    showToast('Please upload an image file.', 'error');
+    return;
+  }
+
+  const btn = document.querySelector('#rentee-add-listing .btn-primary');
+  await withLoading(btn, async () => {
+    try {
+      const res = await fetch('/api/listings', {
+        method: 'POST',
+        body: formData,
+        credentials: 'same-origin'
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to add listing');
+      clearListingForm();
+      showToast('Listing published successfully!', 'success');
+      showPanel('rentee', 'my-listings');
+    } catch(e) { showToast(e.message, 'error'); }
+  });
 }
 
 function clearListingForm() {
