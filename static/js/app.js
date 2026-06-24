@@ -1,18 +1,18 @@
-/* ══════════════════════════════════
-   SmartRent — app.js  (Flask edition)
+﻿/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   SmartRent â€” app.js  (Flask edition)
    All data now persists via SQLite API
-══════════════════════════════════ */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
-// ── STATE ──
+// â”€â”€ STATE â”€â”€
 const state = {
   currentUser: null,
   pendingModalItemId: null,
   pendingModalItemPrice: 0,
 };
 
-// ══════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // API HELPER
-// ══════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 function escapeHtml(str) {
   if (str === null || str === undefined) return "";
   return String(str)
@@ -43,9 +43,9 @@ async function api(path, method, body) {
   return data;
 }
 
-// ══════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // NAVIGATION
-// ══════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 function scrollToSection(id) {
   showPage("landing");
   setTimeout(() => {
@@ -54,7 +54,7 @@ function scrollToSection(id) {
   }, 50);
 }
 
-// ── Mobile landing nav drawer ──
+// â”€â”€ Mobile landing nav drawer â”€â”€
 function toggleMobileNav() {
   const drawer = document.getElementById("mobile-nav-drawer");
   const overlay = document.getElementById("mobile-nav-overlay");
@@ -75,7 +75,7 @@ function closeMobileNav() {
   document.body.style.overflow = "";
 }
 
-// ── Dashboard sidebar slide-in (mobile) ──
+// â”€â”€ Dashboard sidebar slide-in (mobile) â”€â”€
 function openSidebar(sidebarId) {
   const sidebar = document.getElementById(sidebarId);
   const overlayId = sidebarId + "-overlay";
@@ -93,7 +93,7 @@ function closeSidebar(sidebarId) {
   document.body.style.overflow = "";
 }
 
-// ── Mobile bottom nav active state ──
+// â”€â”€ Mobile bottom nav active state â”€â”€
 function setBottomNav(dash, panel) {
   document
     .querySelectorAll("#page-" + dash + " .mobile-bottom-link")
@@ -114,6 +114,10 @@ function togglePasswordVisibility(inputId, iconEl) {
     input.type = "password";
     iconEl.className = "lucide-eye";
   }
+}
+
+function togglePw(inputId, btnEl) {
+  togglePasswordVisibility(inputId, btnEl);
 }
 
 async function withLoading(btn, fn) {
@@ -188,9 +192,9 @@ function showPanel(dash, panel) {
   }
 }
 
-// ══════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // AUTH
-// ══════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 function switchTab(tab) {
   document.getElementById("form-login").style.display =
     tab === "login" ? "block" : "none";
@@ -299,9 +303,9 @@ async function confirmLogout() {
   showPage("landing");
 }
 
-// ══════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // RENTER DASHBOARD
-// ══════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 function initRenterDash() {
   const u = state.currentUser;
   if (!u) return;
@@ -322,7 +326,7 @@ async function renderBrowse() {
   if (!grid) return;
 
   grid.innerHTML =
-    '<div style="color:var(--text3);padding:40px;text-align:center"><i class="lucide-loader" style="font-size:24px"></i></div>';
+    '<div style="color:var(--text-muted);padding:40px;text-align:center"><i class="lucide-loader" style="font-size:24px"></i></div>';
 
   try {
     let url = "/api/listings?";
@@ -376,7 +380,7 @@ async function renderBrowse() {
             escapeHtml(item.description) +
             "</div>",
           '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">',
-          '<div class="item-price">₦' +
+          '<div class="item-price">â‚¦' +
             Number(item.price).toLocaleString() +
             "<span>/day</span></div>",
           avBadge,
@@ -438,16 +442,16 @@ async function renderMyRentals() {
         return (
           "<tr><td><strong>" +
           escapeHtml(r.item_title) +
-          '</strong></td><td style="color:var(--text2);font-size:13px">' +
+          '</strong></td><td style="color:var(--text-darker);font-size:13px">' +
           escapeHtml(r.start_date) +
-          " — " +
-          escapeHtml(r.end_date) +
-          '</td><td><span class="badge ' +
-          badge +
-          '">' +
-          escapeHtml(r.status) +
-          '</span></td><td style="font-weight:600;color:var(--orange)">₦' +
-          cost.toLocaleString() +
+          " â€” " +
+escapeHtml(r.end_date) +
+           '</td><td><span class="badge ' +
+           badge +
+           '">' +
+           escapeHtml(r.status) +
+           '</span></td><td style="font-weight:600;color:var(--primary)">â‚¦' +
+           cost.toLocaleString() +
           "</td></tr>"
         );
       })
@@ -487,9 +491,9 @@ async function renderHistory() {
         (r) =>
           "<tr><td><strong>" +
           escapeHtml(r.item_title) +
-          '</strong></td><td style="color:var(--text2);font-size:13px">' +
+          '</strong></td><td style="color:var(--text-darker);font-size:13px">' +
           escapeHtml(r.start_date) +
-          " — " +
+          " â€” " +
           escapeHtml(r.end_date) +
           '</td><td><span class="badge ' +
           (badgeMap[r.status] || "badge-neutral") +
@@ -510,9 +514,9 @@ async function renderHistory() {
   }
 }
 
-// ══════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // OWNER DASHBOARD
-// ══════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 function initRenteeDash() {
   const u = state.currentUser;
   if (!u) return;
@@ -551,7 +555,7 @@ async function renderOwnerOverview() {
         : '<span class="text-muted">No new requests</span>';
     document.getElementById("stat-active").textContent = active;
     document.getElementById("stat-earnings").textContent =
-      "₦" + earnings.toLocaleString();
+      "â‚¦" + earnings.toLocaleString();
     document.getElementById("stat-earnings-label").textContent =
       earnings > 0 ? "From active rentals" : "Start listing to earn";
 
@@ -567,9 +571,9 @@ async function renderOwnerOverview() {
           (l) =>
             "<tr><td><strong>" +
             escapeHtml(l.title) +
-            '</strong></td><td style="color:var(--text2);font-size:13px">' +
+'</strong></td><td style="color:var(--text-darker);font-size:13px">' +
             escapeHtml(l.category) +
-            '</td><td style="color:var(--orange);font-weight:600">₦' +
+            '</td><td style="color:var(--primary);font-weight:600">â‚¦' +
             Number(l.price).toLocaleString() +
             '</td><td><span class="badge ' +
             (l.status === "available" ? "badge-success" : "badge-warning") +
@@ -579,7 +583,7 @@ async function renderOwnerOverview() {
         )
         .join("");
       overviewEl.innerHTML =
-        '<div class="table-wrap"><div class="table-header"><h3>Recent listings</h3><a style="font-size:13px;color:var(--orange);cursor:pointer" onclick="showPanel(\'rentee\',\'my-listings\')">View all</a></div><table><thead><tr><th>Item</th><th>Category</th><th>Rate/day</th><th>Status</th></tr></thead><tbody>' +
+        '<div class="table-wrap"><div class="table-header"><h3>Recent listings</h3><a style="font-size:13px;color:var(--primary);cursor:pointer" onclick="showPanel(\'rentee\',\'my-listings\')">View all</a></div><table><thead><tr><th>Item</th><th>Category</th><th>Rate/day</th><th>Status</th></tr></thead><tbody>' +
         rows +
         "</tbody></table></div>";
     }
@@ -620,7 +624,7 @@ async function renderMyListings() {
             escapeHtml(item.category) +
             '</div><div class="item-card-title">' +
             escapeHtml(item.title) +
-            '</div><div style="display:flex;align-items:center;justify-content:space-between;margin:8px 0"><div class="item-price">₦' +
+            '</div><div style="display:flex;align-items:center;justify-content:space-between;margin:8px 0"><div class="item-price">â‚¦' +
             Number(item.price).toLocaleString() +
             '<span>/day</span></div><span class="badge ' +
             badge +
@@ -670,15 +674,15 @@ async function renderRequests() {
               ',\'approved\')"><i class="lucide-check" style="font-size:12px"></i> Approve</button><button class="btn btn-danger btn-sm" style="padding:4px 12px" onclick="handleRequest(' +
               r.id +
               ',\'declined\')"><i class="lucide-x" style="font-size:12px"></i> Decline</button></div>'
-            : '<span style="font-size:12px;color:var(--text3)">—</span>';
+            : '<span style="font-size:12px;color:var(--text-muted)">â€”</span>';
         return (
           "<tr><td><strong>" +
           escapeHtml(r.item_title) +
-          '</strong></td><td style="color:var(--text2)">' +
+          '</strong></td><td style="color:var(--text-darker)">' +
           escapeHtml(r.renter_name) +
-          '</td><td style="font-size:13px;color:var(--text2)">' +
+          '</td><td style="font-size:13px;color:var(--text-darker)">' +
           escapeHtml(r.start_date) +
-          " — " +
+          " â€” " +
           escapeHtml(r.end_date) +
           '</td><td><span class="badge ' +
           (badgeMap[r.status] || "badge-neutral") +
@@ -725,7 +729,7 @@ function renderProfile(dash) {
     escapeHtml(u.fname) +
     " " +
     escapeHtml(u.lname) +
-    '</h3><p style="color:var(--text2);font-size:14px">' +
+    '</h3><p style="color:var(--text-darker);font-size:14px">' +
     escapeHtml(u.email) +
     '</p><div style="display:flex;gap:6px;margin-top:8px">' +
     roleBadges +
@@ -739,11 +743,10 @@ function renderProfile(dash) {
 }
 
 async function saveProfile() {
-  const btn = document.querySelector(".profile-card button.btn-primary");
-  const originalText = btn ? btn.innerHTML : "Save changes";
   const fname = (document.getElementById("profile-fname") || {}).value || "";
   const lname = (document.getElementById("profile-lname") || {}).value || "";
   const btn = document.querySelector(".profile-card .btn-primary");
+  const originalText = btn ? btn.innerHTML : "Save changes";
   await withLoading(btn, async () => {
     try {
       const data = await api("/api/profile", "PUT", { fname, lname });
@@ -767,9 +770,9 @@ async function updateReqBadge() {
   } catch (e) {}
 }
 
-// ══════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // RENTAL MODAL
-// ══════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 function openRentModal(itemId, itemPrice, itemTitle) {
   state.pendingModalItemId = itemId;
   state.pendingModalItemPrice = itemPrice;
@@ -799,7 +802,7 @@ function calcModalCost() {
   const cost = state.pendingModalItemPrice * days;
   document.getElementById("modal-cost").style.display = "flex";
   document.getElementById("modal-cost-val").textContent =
-    "₦" +
+    "â‚¦" +
     cost.toLocaleString() +
     " (" +
     days +
@@ -809,8 +812,6 @@ function calcModalCost() {
 }
 
 async function submitRentalRequest() {
-  const btn = document.querySelector(".modal-actions button.btn-primary");
-  const originalText = btn ? btn.innerHTML : "Send request";
   const s = document.getElementById("modal-start").value;
   const e = document.getElementById("modal-end").value;
   if (!s || !e) {
@@ -844,13 +845,10 @@ function closeModalOverlay(ev) {
     document.getElementById("rent-modal").style.display = "none";
 }
 
-// ══════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // LISTING ACTIONS
-// ══════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function addListing() {
-  const btn = document.querySelector("#rentee-add-listing button.btn-primary");
-  const originalText = btn ? btn.innerHTML : "Publish listing";
-
   const title = document.getElementById("new-title").value.trim();
   const cat = document.getElementById("new-cat").value;
   const desc = document.getElementById("new-desc").value.trim();
@@ -926,17 +924,34 @@ function previewImage(input) {
 }
 
 async function toggleItemStatus(id) {
+  const btn = event.target.closest('button');
+  const originalHtml = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="lucide-loader animate-spin" style="font-size:14px"></i> Toggle';
+  }
   try {
     const data = await api("/api/listings/" + id + "/toggle", "PUT");
     showToast("Item marked as " + data.status, "success");
     renderMyListings();
   } catch (e) {
     showToast(e.message, "error");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+    }
   }
 }
 
 async function deleteListing(id) {
   if (!confirm("Delete this listing? This cannot be undone.")) return;
+  const btn = event.target.closest('button');
+  const originalHtml = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="lucide-loader animate-spin" style="font-size:14px"></i>';
+  }
   try {
     await api("/api/listings/" + id, "DELETE");
     showToast("Listing deleted", "success");
@@ -944,10 +959,21 @@ async function deleteListing(id) {
     renderOwnerOverview();
   } catch (e) {
     showToast(e.message, "error");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+    }
   }
 }
 
 async function handleRequest(reqId, action) {
+  const btn = event.target.closest('button');
+  const originalHtml = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="lucide-loader animate-spin" style="font-size:14px"></i>';
+  }
   try {
     await api("/api/requests/" + reqId, "PUT", { action });
     showToast("Request " + action + "!", "success");
@@ -956,12 +982,17 @@ async function handleRequest(reqId, action) {
     updateReqBadge();
   } catch (e) {
     showToast(e.message, "error");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+    }
   }
 }
 
-// ══════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // TOAST
-// ══════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 function showToast(msg, type) {
   type = type || "success";
   const toast = document.getElementById("toast");
@@ -976,9 +1007,9 @@ function showToast(msg, type) {
   }, 3500);
 }
 
-// ══════════════════════════════════
-// INIT — check if already logged in
-// ══════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// INIT â€” check if already logged in
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 document.addEventListener("DOMContentLoaded", async function () {
   try {
     const data = await api("/api/me");

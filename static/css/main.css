@@ -27,6 +27,7 @@
   --primary: #f97316;
   --primary-hover: #ea580c;
   --primary-glow: rgba(249, 115, 22, 0.15);
+  --orange: #f97316;
 
   --text: #f8fafc;
   --text-muted: #94a3b8;
@@ -736,7 +737,7 @@ textarea.form-input {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 20px;
+  padding: 14px 20px;
   font-size: 14px;
   font-weight: 600;
   color: var(--text-muted);
@@ -745,6 +746,7 @@ textarea.form-input {
   border-left: 3px solid transparent;
   text-decoration: none;
   position: relative;
+  min-height: 44px;
 }
 .sidebar-link:hover {
   color: var(--text);
@@ -896,7 +898,7 @@ textarea.form-input {
   box-shadow:
     0 20px 25px -5px rgba(0, 0, 0, 0.35),
     0 10px 10px -5px rgba(0, 0, 0, 0.2);
-  border-color: var(--orange);
+  border-color: var(--primary);
 }
 .item-card-img {
   height: 200px;
@@ -1415,17 +1417,18 @@ tr:hover td {
 .nav-hamburger {
   display: none;
   background: none;
-  border: 1px solid var(--border2);
-  color: var(--text2);
-  border-radius: var(--radius);
-  padding: 6px 10px;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  width: 36px;
+  height: 36px;
   cursor: pointer;
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
 }
 .nav-hamburger:hover {
-  background: var(--bg3);
+  background: var(--surface-hover);
   color: var(--text);
 }
 
@@ -1449,7 +1452,7 @@ tr:hover td {
   right: 0;
   width: min(320px, 85vw);
   height: 100dvh;
-  background: var(--bg2);
+  background: var(--surface);
   border-left: 1px solid var(--border);
   z-index: 310;
   display: flex;
@@ -1478,22 +1481,24 @@ tr:hover td {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 14px 20px;
+  padding: 16px 20px;
   font-size: 15px;
   font-weight: 500;
-  color: var(--text2);
+  color: var(--text-muted);
   cursor: pointer;
   transition: all 0.15s;
   border-left: 3px solid transparent;
+  min-height: 48px;
 }
 .mobile-nav-link:hover {
   color: var(--text);
-  background: var(--bg3);
-  border-left-color: var(--orange);
+  background: var(--surface-hover);
+  border-left-color: var(--primary);
 }
 .mobile-nav-link i {
   font-size: 18px;
-  color: var(--orange);
+  color: var(--primary);
+  flex-shrink: 0;
 }
 .mobile-nav-actions {
   padding: 20px;
@@ -1520,11 +1525,11 @@ tr:hover td {
   display: none;
   background: none;
   border: none;
-  color: var(--text2);
+  color: var(--text-muted);
   font-size: 20px;
   cursor: pointer;
   padding: 4px;
-  border-radius: var(--radius);
+  border-radius: var(--radius-sm);
   transition: color 0.2s;
   line-height: 1;
 }
@@ -1536,17 +1541,18 @@ tr:hover td {
 .topbar-hamburger {
   display: none;
   background: none;
-  border: 1px solid var(--border2);
-  color: var(--text2);
-  border-radius: var(--radius);
-  padding: 5px 8px;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  width: 36px;
+  height: 36px;
   cursor: pointer;
   margin-right: 10px;
   transition: all 0.2s;
   flex-shrink: 0;
 }
 .topbar-hamburger:hover {
-  background: var(--bg3);
+  background: var(--surface-hover);
   color: var(--text);
 }
 
@@ -1559,7 +1565,7 @@ tr:hover td {
   bottom: 0;
   left: 0;
   right: 0;
-  background: var(--bg2);
+  background: var(--surface);
   border-top: 1px solid var(--border);
   z-index: 200;
   padding: 0;
@@ -1572,22 +1578,24 @@ tr:hover td {
   justify-content: center;
   gap: 3px;
   flex: 1;
-  padding: 10px 4px;
+  padding: 12px 4px;
   font-size: 10px;
   font-weight: 500;
-  color: var(--text3);
+  color: var(--text-muted);
   cursor: pointer;
   transition: color 0.15s;
   text-decoration: none;
+  min-height: 56px;
 }
 .mobile-bottom-link i {
   font-size: 20px;
+  flex-shrink: 0;
 }
 .mobile-bottom-link:hover {
-  color: var(--text2);
+  color: var(--text);
 }
 .mobile-bottom-link.active {
-  color: var(--orange);
+  color: var(--primary);
 }
 
 /* helper to hide text labels on small screens */
@@ -1595,8 +1603,8 @@ tr:hover td {
 }
 
 /* ══════════════════════════════════════
-   BREAKPOINT — TABLET (≤ 900px)
-══════════════════════════════════════ */
+    BREAKPOINT — TABLET (≤ 900px)
+ ══════════════════════════════════════ */
 @media (max-width: 900px) {
   .sidebar {
     width: 220px;
@@ -1609,6 +1617,10 @@ tr:hover td {
   }
   .cards-grid {
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+  /* hide text labels on tablet topbar buttons */
+  .hide-sm-tablet {
+    display: none;
   }
 }
 
