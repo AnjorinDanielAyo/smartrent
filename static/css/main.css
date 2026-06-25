@@ -1971,3 +1971,31 @@ tr:hover td {
   margin-right: 6px;
   vertical-align: middle;
 }
+
+/* ── PASSWORD TOGGLE (FIXED POSITIONS) ── */
+.pw-wrap {
+  position: relative;
+  display: block;
+}
+.pw-wrap .form-input {
+  padding-right: 44px;
+}
+.pw-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  transition: color 0.2s;
+  outline: none;
+}
+.pw-toggle:hover {
+  color: var(--text);
+}

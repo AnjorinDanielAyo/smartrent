@@ -1,18 +1,18 @@
-﻿/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   SmartRent â€” app.js  (Flask edition)
+﻿/* ════════════════════════════════════════
+   SmartRent — app.js  (Flask edition)
    All data now persists via SQLite API
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+════════════════════════════════════════ */
 
-// â”€â”€ STATE â”€â”€
+// ── STATE ──
 const state = {
   currentUser: null,
   pendingModalItemId: null,
   pendingModalItemPrice: 0,
 };
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════
 // API HELPER
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════
 function escapeHtml(str) {
   if (str === null || str === undefined) return "";
   return String(str)
@@ -43,9 +43,9 @@ async function api(path, method, body) {
   return data;
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════
 // NAVIGATION
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════
 function scrollToSection(id) {
   showPage("landing");
   setTimeout(() => {
@@ -54,7 +54,7 @@ function scrollToSection(id) {
   }, 50);
 }
 
-// â”€â”€ Mobile landing nav drawer â”€â”€
+// ── Mobile landing nav drawer ──
 function toggleMobileNav() {
   const drawer = document.getElementById("mobile-nav-drawer");
   const overlay = document.getElementById("mobile-nav-overlay");
@@ -75,7 +75,32 @@ function closeMobileNav() {
   document.body.style.overflow = "";
 }
 
-// â”€â”€ Dashboard sidebar slide-in (mobile) â”€â”€
+// ── Smart Homepage Routing ──
+function handleHomeAction(role) {
+  if (state.currentUser) {
+    // If the user is already logged in, route them directly to the app
+    if (role === "rentee") {
+      if (state.currentUser.roles === "renter") {
+        showToast(
+          "Your account is currently renter-only. Update your profile to enable listing.",
+          "error",
+        );
+        showPage("renter");
+        showPanel("renter", "profile");
+      } else {
+        showPage("rentee");
+      }
+    } else {
+      showPage("renter");
+    }
+  } else {
+    // Not logged in: go to register and pre-select the role they clicked
+    showPage("auth", "register");
+    selectRole(role);
+  }
+}
+
+// ── Dashboard sidebar slide-in (mobile) ──
 function openSidebar(sidebarId) {
   const sidebar = document.getElementById(sidebarId);
   const overlayId = sidebarId + "-overlay";
@@ -93,7 +118,7 @@ function closeSidebar(sidebarId) {
   document.body.style.overflow = "";
 }
 
-// â”€â”€ Mobile bottom nav active state â”€â”€
+// ── Mobile bottom nav active state ──
 function setBottomNav(dash, panel) {
   document
     .querySelectorAll("#page-" + dash + " .mobile-bottom-link")
@@ -109,22 +134,24 @@ function togglePasswordVisibility(inputId, iconEl) {
   if (!input) return;
   if (input.type === "password") {
     input.type = "text";
-    iconEl.className = "lucide-eye-off";
+    iconEl.className = "icon-eye-off";
   } else {
     input.type = "password";
-    iconEl.className = "lucide-eye";
+    iconEl.className = "icon-eye";
   }
 }
 
 function togglePw(inputId, btnEl) {
-  togglePasswordVisibility(inputId, btnEl);
+  // Corrected toggle pointer reference!
+  const icon = btnEl.querySelector("i") || btnEl;
+  togglePasswordVisibility(inputId, icon);
 }
 
 async function withLoading(btn, fn) {
   if (!btn) return await fn();
   const original = btn.innerHTML;
   btn.disabled = true;
-  btn.innerHTML = `<i class="lucide-loader animate-spin" style="display:inline-block"></i> Processing...`;
+  btn.innerHTML = `<i class="icon-loader animate-spin" style="display:inline-block"></i> Processing...`;
   try {
     return await fn();
   } finally {
@@ -167,6 +194,7 @@ function showPanel(dash, panel) {
 
   const titles = {
     browse: "Browse items",
+    categories: "Categories",
     "my-rentals": "My rentals",
     history: "Rental history",
     overview: "Overview",
@@ -192,9 +220,9 @@ function showPanel(dash, panel) {
   }
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════
 // AUTH
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════
 function switchTab(tab) {
   document.getElementById("form-login").style.display =
     tab === "login" ? "block" : "none";
@@ -303,9 +331,9 @@ async function confirmLogout() {
   showPage("landing");
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════
 // RENTER DASHBOARD
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════
 function initRenterDash() {
   const u = state.currentUser;
   if (!u) return;
@@ -317,6 +345,13 @@ function initRenterDash() {
   showPanel("renter", "browse");
 }
 
+function selectCategory(cat) {
+  const select = document.getElementById("browse-cat");
+  if (select) select.value = cat;
+  showPanel("renter", "browse");
+  filterItems();
+}
+
 async function renderBrowse() {
   const q = (document.getElementById("browse-search") || {}).value || "";
   const cat = (document.getElementById("browse-cat") || {}).value || "";
@@ -326,7 +361,7 @@ async function renderBrowse() {
   if (!grid) return;
 
   grid.innerHTML =
-    '<div style="color:var(--text-muted);padding:40px;text-align:center"><i class="lucide-loader" style="font-size:24px"></i></div>';
+    '<div style="color:var(--text-muted);padding:40px;text-align:center"><i class="icon-loader" style="font-size:24px"></i></div>';
 
   try {
     let url = "/api/listings?";
@@ -349,15 +384,15 @@ async function renderBrowse() {
       .map(function (item) {
         const avBadge =
           item.status === "available"
-            ? '<span class="availability-badge badge-available"><i class="lucide-circle" style="font-size:8px"></i> Available</span>'
-            : '<span class="availability-badge badge-rented"><i class="lucide-circle" style="font-size:8px"></i> Rented</span>';
+            ? '<span class="availability-badge badge-available"><i class="icon-circle" style="font-size:8px"></i> Available</span>'
+            : '<span class="availability-badge badge-rented"><i class="icon-circle" style="font-size:8px"></i> Rented</span>';
         const imgHtml = item.img_url
           ? '<img src="' +
             escapeHtml(item.img_url) +
             '" alt="' +
             escapeHtml(item.title) +
-            "\" loading=\"lazy\" onerror=\"this.parentElement.innerHTML='<div class=\\'no-img\\'><i class=\\'lucide-image-off\\'></i></div>'\" />"
-          : '<div class="no-img"><i class="lucide-image-off"></i></div>';
+            "\" loading=\"lazy\" onerror=\"this.parentElement.innerHTML='<div class=\\'no-img\\'><i class=\\'icon-image-off\\'></i></div>'\" />"
+          : '<div class="no-img"><i class="icon-image-off"></i></div>';
         const actionBtn =
           item.status === "available"
             ? '<button class="btn btn-primary btn-sm w-full" style="margin-top:12px" onclick="openRentModal(' +
@@ -366,13 +401,13 @@ async function renderBrowse() {
               item.price +
               ", '" +
               item.title.replace(/'/g, "\\'") +
-              '\')"><i class="lucide-calendar-plus" style="font-size:14px"></i> Request rental</button>'
+              '\')"><i class="icon-calendar-plus" style="font-size:14px"></i> Request rental</button>'
             : '<button class="btn btn-ghost btn-sm w-full" style="margin-top:12px;opacity:.5;cursor:not-allowed" disabled>Currently unavailable</button>';
         return [
           '<div class="item-card">',
           '<div class="item-card-img">' + imgHtml + "</div>",
           '<div class="item-card-body">',
-          '<div class="item-cat-tag"><i class="lucide-tag" style="font-size:11px"></i>' +
+          '<div class="item-cat-tag"><i class="icon-tag" style="font-size:11px"></i>' +
             escapeHtml(item.category) +
             "</div>",
           '<div class="item-card-title">' + escapeHtml(item.title) + "</div>",
@@ -380,16 +415,16 @@ async function renderBrowse() {
             escapeHtml(item.description) +
             "</div>",
           '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">',
-          '<div class="item-price">â‚¦' +
+          '<div class="item-price">₦' +
             Number(item.price).toLocaleString() +
             "<span>/day</span></div>",
           avBadge,
           "</div>",
           '<div class="item-meta">',
-          '<span><i class="lucide-map-pin"></i> ' +
+          '<span><i class="icon-map-pin"></i> ' +
             escapeHtml(item.location) +
             "</span>",
-          '<span><i class="lucide-user"></i> ' +
+          '<span><i class="icon-user"></i> ' +
             escapeHtml(item.owner_name || "") +
             "</span>",
           "</div>",
@@ -401,7 +436,7 @@ async function renderBrowse() {
       .join("");
   } catch (e) {
     grid.innerHTML =
-      '<div class="empty-state"><i class="lucide-wifi-off"></i><h3>Could not load items</h3><p>' +
+      '<div class="empty-state"><i class="icon-wifi-off"></i><h3>Could not load items</h3><p>' +
       e.message +
       "</p></div>";
   }
@@ -427,7 +462,7 @@ async function renderMyRentals() {
     );
     if (reqs.length === 0) {
       el.innerHTML =
-        '<div class="empty-state"><i class="lucide-calendar-x"></i><h3>No active rentals</h3><p>Your approved and pending rental requests will appear here.</p><button class="btn btn-primary btn-sm" onclick="showPanel(\'renter\',\'browse\')"><i class="lucide-search" style="font-size:14px"></i> Browse items</button></div>';
+        '<div class="empty-state"><i class="icon-calendar-x"></i><h3>No active rentals</h3><p>Your approved and pending rental requests will appear here.</p><button class="btn btn-primary btn-sm" onclick="showPanel(\'renter\',\'browse\')"><i class="icon-search" style="font-size:14px"></i> Browse items</button></div>';
       return;
     }
     const rows = reqs
@@ -444,14 +479,14 @@ async function renderMyRentals() {
           escapeHtml(r.item_title) +
           '</strong></td><td style="color:var(--text-darker);font-size:13px">' +
           escapeHtml(r.start_date) +
-          " â€” " +
-escapeHtml(r.end_date) +
-           '</td><td><span class="badge ' +
-           badge +
-           '">' +
-           escapeHtml(r.status) +
-           '</span></td><td style="font-weight:600;color:var(--primary)">â‚¦' +
-           cost.toLocaleString() +
+          " — " +
+          escapeHtml(r.end_date) +
+          '</td><td><span class="badge ' +
+          badge +
+          '">' +
+          escapeHtml(r.status) +
+          '</span></td><td style="font-weight:600;color:var(--primary)">₦' +
+          cost.toLocaleString() +
           "</td></tr>"
         );
       })
@@ -462,7 +497,7 @@ escapeHtml(r.end_date) +
       "</tbody></table></div>";
   } catch (e) {
     el.innerHTML =
-      '<div class="empty-state"><i class="lucide-alert-circle"></i><h3>Error</h3><p>' +
+      '<div class="empty-state"><i class="icon-alert-circle"></i><h3>Error</h3><p>' +
       e.message +
       "</p></div>";
   }
@@ -478,7 +513,7 @@ async function renderHistory() {
     );
     if (hist.length === 0) {
       el.innerHTML =
-        '<div class="empty-state"><i class="lucide-clock"></i><h3>No rental history yet</h3><p>Completed and cancelled rentals will show up here.</p></div>';
+        '<div class="empty-state"><i class="icon-clock"></i><h3>No rental history yet</h3><p>Completed and cancelled rentals will show up here.</p></div>';
       return;
     }
     const badgeMap = {
@@ -493,7 +528,7 @@ async function renderHistory() {
           escapeHtml(r.item_title) +
           '</strong></td><td style="color:var(--text-darker);font-size:13px">' +
           escapeHtml(r.start_date) +
-          " â€” " +
+          " — " +
           escapeHtml(r.end_date) +
           '</td><td><span class="badge ' +
           (badgeMap[r.status] || "badge-neutral") +
@@ -508,15 +543,15 @@ async function renderHistory() {
       "</tbody></table></div>";
   } catch (e) {
     el.innerHTML =
-      '<div class="empty-state"><i class="lucide-alert-circle"></i><h3>Error</h3><p>' +
+      '<div class="empty-state"><i class="icon-alert-circle"></i><h3>Error</h3><p>' +
       e.message +
       "</p></div>";
   }
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════
 // OWNER DASHBOARD
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════
 function initRenteeDash() {
   const u = state.currentUser;
   if (!u) return;
@@ -555,7 +590,7 @@ async function renderOwnerOverview() {
         : '<span class="text-muted">No new requests</span>';
     document.getElementById("stat-active").textContent = active;
     document.getElementById("stat-earnings").textContent =
-      "â‚¦" + earnings.toLocaleString();
+      "₦" + earnings.toLocaleString();
     document.getElementById("stat-earnings-label").textContent =
       earnings > 0 ? "From active rentals" : "Start listing to earn";
 
@@ -563,7 +598,7 @@ async function renderOwnerOverview() {
     if (!overviewEl) return;
     if (listings.length === 0) {
       overviewEl.innerHTML =
-        '<div class="empty-state"><i class="lucide-package-plus"></i><h3>No listings yet</h3><p>Add your first item to start earning rental income.</p><button class="btn btn-primary btn-sm" onclick="showPanel(\'rentee\',\'add-listing\')"><i class="lucide-plus" style="font-size:14px"></i> Add your first listing</button></div>';
+        '<div class="empty-state"><i class="icon-package-plus"></i><h3>No listings yet</h3><p>Add your first item to start earning rental income.</p><button class="btn btn-primary btn-sm" onclick="showPanel(\'rentee\',\'add-listing\')"><i class="icon-plus" style="font-size:14px"></i> Add your first listing</button></div>';
     } else {
       const rows = listings
         .slice(0, 5)
@@ -571,9 +606,9 @@ async function renderOwnerOverview() {
           (l) =>
             "<tr><td><strong>" +
             escapeHtml(l.title) +
-'</strong></td><td style="color:var(--text-darker);font-size:13px">' +
+            '</strong></td><td style="color:var(--text-darker);font-size:13px">' +
             escapeHtml(l.category) +
-            '</td><td style="color:var(--primary);font-weight:600">â‚¦' +
+            '</td><td style="color:var(--primary);font-weight:600">₦' +
             Number(l.price).toLocaleString() +
             '</td><td><span class="badge ' +
             (l.status === "available" ? "badge-success" : "badge-warning") +
@@ -601,7 +636,7 @@ async function renderMyListings() {
     const listings = data.listings;
     if (listings.length === 0) {
       el.innerHTML =
-        '<div class="empty-state"><i class="lucide-box"></i><h3>No listings yet</h3><p>You haven\'t listed any items. Add your first listing to start earning.</p><button class="btn btn-primary btn-sm" onclick="showPanel(\'rentee\',\'add-listing\')"><i class="lucide-plus" style="font-size:14px"></i> Add listing</button></div>';
+        '<div class="empty-state"><i class="icon-box"></i><h3>No listings yet</h3><p>You haven\'t listed any items. Add your first listing to start earning.</p><button class="btn btn-primary btn-sm" onclick="showPanel(\'rentee\',\'add-listing\')"><i class="icon-plus" style="font-size:14px"></i> Add listing</button></div>';
       return;
     }
     el.innerHTML =
@@ -615,35 +650,35 @@ async function renderMyListings() {
               escapeHtml(item.img_url) +
               '" alt="' +
               escapeHtml(item.title) +
-              "\" loading=\"lazy\" onerror=\"this.parentElement.innerHTML='<div class=\\'no-img\\'><i class=\\'lucide-image-off\\'></i></div>'\" />"
-            : '<div class="no-img"><i class="lucide-image-off"></i></div>';
+              "\" loading=\"lazy\" onerror=\"this.parentElement.innerHTML='<div class=\\'no-img\\'><i class=\\'icon-image-off\\'></i></div>'\" />"
+            : '<div class="no-img"><i class="icon-image-off"></i></div>';
           return (
             '<div class="item-card"><div class="item-card-img">' +
             imgHtml +
-            '</div><div class="item-card-body"><div class="item-cat-tag"><i class="lucide-tag" style="font-size:11px"></i>' +
+            '</div><div class="item-card-body"><div class="item-cat-tag"><i class="icon-tag" style="font-size:11px"></i>' +
             escapeHtml(item.category) +
             '</div><div class="item-card-title">' +
             escapeHtml(item.title) +
-            '</div><div style="display:flex;align-items:center;justify-content:space-between;margin:8px 0"><div class="item-price">â‚¦' +
+            '</div><div style="display:flex;align-items:center;justify-content:space-between;margin:8px 0"><div class="item-price">₦' +
             Number(item.price).toLocaleString() +
             '<span>/day</span></div><span class="badge ' +
             badge +
             '">' +
             escapeHtml(item.status) +
-            '</span></div><div class="item-meta"><span><i class="lucide-map-pin"></i> ' +
+            '</span></div><div class="item-meta"><span><i class="icon-map-pin"></i> ' +
             escapeHtml(item.location) +
             '</span></div><div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-ghost btn-sm" style="flex:1;justify-content:center" onclick="toggleItemStatus(' +
             item.id +
-            ')"><i class="lucide-refresh-cw" style="font-size:13px"></i> Toggle</button><button class="btn btn-danger btn-sm" onclick="deleteListing(' +
+            ')"><i class="icon-refresh-cw" style="font-size:13px"></i> Toggle</button><button class="btn btn-danger btn-sm" onclick="deleteListing(' +
             item.id +
-            ')"><i class="lucide-trash-2" style="font-size:13px"></i></button></div></div></div>'
+            ')"><i class="icon-trash-2" style="font-size:13px"></i></button></div></div></div>'
           );
         })
         .join("") +
       "</div>";
   } catch (e) {
     el.innerHTML =
-      '<div class="empty-state"><i class="lucide-alert-circle"></i><h3>Error loading listings</h3><p>' +
+      '<div class="empty-state"><i class="icon-alert-circle"></i><h3>Error loading listings</h3><p>' +
       e.message +
       "</p></div>";
   }
@@ -657,7 +692,7 @@ async function renderRequests() {
     const reqs = data.requests;
     if (reqs.length === 0) {
       el.innerHTML =
-        '<div class="empty-state"><i class="lucide-inbox"></i><h3>No requests yet</h3><p>Rental requests from other users will appear here once your items are listed.</p></div>';
+        '<div class="empty-state"><i class="icon-inbox"></i><h3>No requests yet</h3><p>Rental requests from other users will appear here once your items are listed.</p></div>';
       return;
     }
     const badgeMap = {
@@ -671,10 +706,10 @@ async function renderRequests() {
           r.status === "pending"
             ? '<div style="display:flex;gap:6px"><button class="btn btn-sm" style="background:rgba(34,197,94,.1);color:var(--success);border:1px solid rgba(34,197,94,.2);padding:4px 12px" onclick="handleRequest(' +
               r.id +
-              ',\'approved\')"><i class="lucide-check" style="font-size:12px"></i> Approve</button><button class="btn btn-danger btn-sm" style="padding:4px 12px" onclick="handleRequest(' +
+              ',\'approved\')"><i class="icon-check" style="font-size:12px"></i> Approve</button><button class="btn btn-danger btn-sm" style="padding:4px 12px" onclick="handleRequest(' +
               r.id +
-              ',\'declined\')"><i class="lucide-x" style="font-size:12px"></i> Decline</button></div>'
-            : '<span style="font-size:12px;color:var(--text-muted)">â€”</span>';
+              ',\'declined\')"><i class="icon-x" style="font-size:12px"></i> Decline</button></div>'
+            : '<span style="font-size:12px;color:var(--text-muted)">—</span>';
         return (
           "<tr><td><strong>" +
           escapeHtml(r.item_title) +
@@ -682,7 +717,7 @@ async function renderRequests() {
           escapeHtml(r.renter_name) +
           '</td><td style="font-size:13px;color:var(--text-darker)">' +
           escapeHtml(r.start_date) +
-          " â€” " +
+          " — " +
           escapeHtml(r.end_date) +
           '</td><td><span class="badge ' +
           (badgeMap[r.status] || "badge-neutral") +
@@ -700,7 +735,7 @@ async function renderRequests() {
       "</tbody></table></div>";
   } catch (e) {
     el.innerHTML =
-      '<div class="empty-state"><i class="lucide-alert-circle"></i><h3>Error</h3><p>' +
+      '<div class="empty-state"><i class="icon-alert-circle"></i><h3>Error</h3><p>' +
       e.message +
       "</p></div>";
   }
@@ -715,7 +750,7 @@ function renderProfile(dash) {
     .map(function (r) {
       return (
         '<span class="badge badge-info"><i class="' +
-        (r === "renter" ? "lucide-search" : "lucide-package") +
+        (r === "renter" ? "icon-search" : "icon-package") +
         '" style="font-size:11px"></i> ' +
         (r === "renter" ? "Renter" : "Owner") +
         "</span>"
@@ -739,7 +774,7 @@ function renderProfile(dash) {
     escapeHtml(u.lname) +
     '" /></div></div><div class="form-group"><label class="form-label">Email address</label><input class="form-input" value="' +
     escapeHtml(u.email) +
-    '" disabled style="opacity:.6" /></div><button class="btn btn-primary btn-sm" onclick="saveProfile()"><i class="lucide-check" style="font-size:14px"></i> Save changes</button></div>';
+    '" disabled style="opacity:.6" /></div><button class="btn btn-primary btn-sm" onclick="saveProfile()"><i class="icon-check" style="font-size:14px"></i> Save changes</button></div>';
 }
 
 async function saveProfile() {
@@ -770,9 +805,9 @@ async function updateReqBadge() {
   } catch (e) {}
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════
 // RENTAL MODAL
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════
 function openRentModal(itemId, itemPrice, itemTitle) {
   state.pendingModalItemId = itemId;
   state.pendingModalItemPrice = itemPrice;
@@ -802,7 +837,7 @@ function calcModalCost() {
   const cost = state.pendingModalItemPrice * days;
   document.getElementById("modal-cost").style.display = "flex";
   document.getElementById("modal-cost-val").textContent =
-    "â‚¦" +
+    "₦" +
     cost.toLocaleString() +
     " (" +
     days +
@@ -845,9 +880,9 @@ function closeModalOverlay(ev) {
     document.getElementById("rent-modal").style.display = "none";
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════
 // LISTING ACTIONS
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════
 async function addListing() {
   const title = document.getElementById("new-title").value.trim();
   const cat = document.getElementById("new-cat").value;
@@ -924,11 +959,12 @@ function previewImage(input) {
 }
 
 async function toggleItemStatus(id) {
-  const btn = event.target.closest('button');
-  const originalHtml = btn ? btn.innerHTML : '';
+  const btn = event.target.closest("button");
+  const originalHtml = btn ? btn.innerHTML : "";
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = '<i class="lucide-loader animate-spin" style="font-size:14px"></i> Toggle';
+    btn.innerHTML =
+      '<i class="icon-loader animate-spin" style="font-size:14px"></i> Toggle';
   }
   try {
     const data = await api("/api/listings/" + id + "/toggle", "PUT");
@@ -946,11 +982,12 @@ async function toggleItemStatus(id) {
 
 async function deleteListing(id) {
   if (!confirm("Delete this listing? This cannot be undone.")) return;
-  const btn = event.target.closest('button');
-  const originalHtml = btn ? btn.innerHTML : '';
+  const btn = event.target.closest("button");
+  const originalHtml = btn ? btn.innerHTML : "";
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = '<i class="lucide-loader animate-spin" style="font-size:14px"></i>';
+    btn.innerHTML =
+      '<i class="icon-loader animate-spin" style="font-size:14px"></i>';
   }
   try {
     await api("/api/listings/" + id, "DELETE");
@@ -968,11 +1005,12 @@ async function deleteListing(id) {
 }
 
 async function handleRequest(reqId, action) {
-  const btn = event.target.closest('button');
-  const originalHtml = btn ? btn.innerHTML : '';
+  const btn = event.target.closest("button");
+  const originalHtml = btn ? btn.innerHTML : "";
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = '<i class="lucide-loader animate-spin" style="font-size:14px"></i>';
+    btn.innerHTML =
+      '<i class="icon-loader animate-spin" style="font-size:14px"></i>';
   }
   try {
     await api("/api/requests/" + reqId, "PUT", { action });
@@ -990,9 +1028,9 @@ async function handleRequest(reqId, action) {
   }
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════
 // TOAST
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════
 function showToast(msg, type) {
   type = type || "success";
   const toast = document.getElementById("toast");
@@ -1000,16 +1038,16 @@ function showToast(msg, type) {
   document.getElementById("toast-msg").textContent = msg;
   toast.className = "toast toast-" + type;
   icon.className =
-    type === "success" ? "lucide-check-circle" : "lucide-alert-circle";
+    type === "success" ? "icon-check-circle" : "icon-alert-circle";
   toast.classList.add("show");
   setTimeout(function () {
     toast.classList.remove("show");
   }, 3500);
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// INIT â€” check if already logged in
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════
+// INIT — check if already logged in
+// ════════════════════════════════════════
 document.addEventListener("DOMContentLoaded", async function () {
   try {
     const data = await api("/api/me");
